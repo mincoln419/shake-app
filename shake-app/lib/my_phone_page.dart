@@ -1,9 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:shake/shake.dart';
 import 'package:shake_gesture/shake_gesture.dart';
-
-
+import 'package:velocity_x/velocity_x.dart';
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
@@ -23,15 +21,45 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _MyHomePageState extends State<MyHomePage> with WidgetsBindingObserver {
   int _counter = 0;
+
+  late bool onApp;
 
   @override
   void initState() {
+    WidgetsBinding.instance.addObserver(this);
+    onApp = true;
 
+    ///ShakeDetector.autoStart(onPhoneShake: ()=> print("shake"));
     super.initState();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.detached:
+        return;
+      case AppLifecycleState.resumed:
+        onApp = true;
+        return;
+      case AppLifecycleState.inactive:
+        return;
+      case AppLifecycleState.hidden:
+        return;
+      case AppLifecycleState.paused:
+
+        /// onApp = false;
+        return;
+    }
+  }
 
   void _incrementCounter() {
     setState(() {
@@ -83,12 +111,22 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             ShakeGesture(
               onShake: () => setState(() {
-                _counter++;
+                if (onApp) {
+                  _counter++;
+                }
                 print("shake!!!");
               }),
-              child: const Text(
-                '흔들어서 카운트를 올려보세요',
-              ),
+              child: '흔들어서 카운트를 올려보세요'
+                  .text
+                  .bold
+                  .color(Colors.green)
+                  .makeCentered()
+                  .box
+                  .withRounded(value: 50)
+                  .height(150)
+                  .color(Colors.red)
+                  .make()
+                  .pSymmetric(h: 20, v: 10),
             ),
             Text(
               '$_counter',
