@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:shake/shake.dart';
+import 'package:shake_gesture/shake_gesture.dart';
 
 
 
@@ -27,10 +28,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   void initState() {
-    ShakeDetector detector = ShakeDetector.waitForStart(onPhoneShake: () =>{
-      _incrementCounter(),
-    });
-    detector.startListening();
+
     super.initState();
   }
 
@@ -83,8 +81,14 @@ class _MyHomePageState extends State<MyHomePage> {
           // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            const Text(
-              '흔들어서 카운트를 올려보세요',
+            ShakeGesture(
+              onShake: () => setState(() {
+                _counter++;
+                print("shake!!!");
+              }),
+              child: const Text(
+                '흔들어서 카운트를 올려보세요',
+              ),
             ),
             Text(
               '$_counter',
