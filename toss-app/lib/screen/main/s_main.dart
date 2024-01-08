@@ -1,6 +1,9 @@
+import 'package:after_layout/after_layout.dart';
+import 'package:fast_app_base/common/cli_common.dart';
 import 'package:fast_app_base/screen/main/tab/tab_item.dart';
 import 'package:fast_app_base/screen/main/tab/tab_navigator.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../../common/common.dart';
 import 'w_menu_drawer.dart';
@@ -12,7 +15,7 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => MainScreenState();
 }
 
-class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin {
+class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin, AfterLayoutMixin {
   TabItem _currentTab = TabItem.home;
   final tabs = [TabItem.home, TabItem.favorite];
   final List<GlobalKey<NavigatorState>> navigatorKeys = [];
@@ -153,5 +156,12 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
     for (final _ in tabs) {
       navigatorKeys.add(GlobalKey<NavigatorState>());
     }
+  }
+
+  @override
+  FutureOr<void> afterFirstLayout(BuildContext context) {
+    delay((){
+      FlutterNativeSplash.remove();
+    }, 1500.ms);
   }
 }
