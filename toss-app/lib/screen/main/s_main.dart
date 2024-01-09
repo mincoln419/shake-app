@@ -17,7 +17,13 @@ class MainScreen extends StatefulWidget {
 
 class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin, AfterLayoutMixin {
   TabItem _currentTab = TabItem.home;
-  final tabs = [TabItem.home, TabItem.favorite];
+  final tabs = [
+    TabItem.home,
+    TabItem.benefit,
+    TabItem.ttosspay,
+    TabItem.stock,
+    TabItem.all,
+    ];
   final List<GlobalKey<NavigatorState>> navigatorKeys = [];
 
   int get _currentIndex => tabs.indexOf(_currentTab);
@@ -28,6 +34,8 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
 
   static double get bottomNavigationBarBorderRadius => 30.0;
 
+  bool isFirstRouteInCurrentTab = false;
+
   @override
   void initState() {
     super.initState();
@@ -36,8 +44,9 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _handleBackPressed,
+    return PopScope(
+      canPop: isFirstRouteInCurrentTab,
+      onPopInvoked: _handleBackPressed,
       child: Scaffold(
         extendBody: extendBody, //bottomNavigationBar 아래 영역 까지 그림
         drawer: const MenuDrawer(),
@@ -66,16 +75,25 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
               ))
           .toList());
 
-  Future<bool> _handleBackPressed() async {
-    final isFirstRouteInCurrentTab =
+  Future<bool> _handleBackPressed(bool check) async {
+    isFirstRouteInCurrentTab =
         (await _currentTabNavigationKey.currentState?.maybePop() == false);
+
+    print("isFirstRouteInCurrentTab$_currentTab");
+
     if (isFirstRouteInCurrentTab) {
       if (_currentTab != TabItem.home) {
         _changeTab(tabs.indexOf(TabItem.home));
-        return false;
+        setState(() {
+          isFirstRouteInCurrentTab = true;
+        });
       }
+    }else {
+      // maybePop 가능하면 나가지 않는다.
+      setState(() {
+        isFirstRouteInCurrentTab = false;
+      });
     }
-    // maybePop 가능하면 나가지 않는다.
     return isFirstRouteInCurrentTab;
   }
 
