@@ -34,8 +34,6 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
 
   static double get bottomNavigationBarBorderRadius => 30.0;
 
-  bool isFirstRouteInCurrentTab = false;
-
   @override
   void initState() {
     super.initState();
@@ -45,7 +43,7 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: isFirstRouteInCurrentTab,
+      canPop: false,
       onPopInvoked: _handleBackPressed,
       child: Scaffold(
         extendBody: extendBody, //bottomNavigationBar 아래 영역 까지 그림
@@ -75,26 +73,25 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
               ))
           .toList());
 
-  Future<bool> _handleBackPressed(bool check) async {
-    isFirstRouteInCurrentTab =
-        (await _currentTabNavigationKey.currentState?.maybePop() == false);
+  void _handleBackPressed(bool didpop) async {
+    if(didpop){
+      return;
+    }
+    final navigator = Navigator.of(context);
+    final isFirstRouteInCurrentTab =
+    (await _currentTabNavigationKey.currentState?.maybePop() == false);
 
     print("isFirstRouteInCurrentTab$_currentTab");
+    print("bool... $isFirstRouteInCurrentTab");
 
     if (isFirstRouteInCurrentTab) {
       if (_currentTab != TabItem.home) {
         _changeTab(tabs.indexOf(TabItem.home));
-        setState(() {
-          isFirstRouteInCurrentTab = true;
-        });
+
+      }else{
+        navigator.pop();
       }
-    }else {
-      // maybePop 가능하면 나가지 않는다.
-      setState(() {
-        isFirstRouteInCurrentTab = false;
-      });
     }
-    return isFirstRouteInCurrentTab;
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
