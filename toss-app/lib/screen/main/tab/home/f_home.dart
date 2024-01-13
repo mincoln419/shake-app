@@ -26,7 +26,6 @@ class HomeFragment extends StatelessWidget {
       color: Colors.black,
       child: Stack(
         children: [
-          TossBar(),
           RefreshIndicator(
             edgeOffset: TossBar.appBarHeight,
             onRefresh: () async {
@@ -57,7 +56,8 @@ class HomeFragment extends StatelessWidget {
                 ],
               ).pSymmetric(h: 20),
             ),
-          )
+          ),
+          TossBar(),
         ],
       ),
     );

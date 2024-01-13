@@ -1,4 +1,5 @@
 import 'package:fast_app_base/common/common.dart';
+import 'package:fast_app_base/screen/notification/s_notification.dart';
 import 'package:flutter/material.dart';
 
 class TossBar extends StatefulWidget {
@@ -11,7 +12,7 @@ class TossBar extends StatefulWidget {
 
 class _TossBarState extends State<TossBar> {
 
-  bool _show_red_dot = false;
+  bool _showRedDot = false;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +34,8 @@ class _TossBarState extends State<TossBar> {
           width10,
           Tap(
             onTap: () => setState(() {
-              _show_red_dot = !_show_red_dot;
+              _showRedDot = !_showRedDot;
+              Nav.push(NotificationScreen());
             }),
             child: Stack(
               children: [
@@ -41,14 +43,14 @@ class _TossBarState extends State<TossBar> {
                   "$basePath/icon/notification.png",
                   height: 30,
                 ),
-                if(_show_red_dot)Positioned.fill(
+                if(_showRedDot)Positioned.fill(
                     child: Align(
                   alignment: Alignment.topRight,
                   child: Container(
                     width: 6,
                     height: 6,
                     decoration:
-                        BoxDecoration(shape: BoxShape.circle, color: Colors.red),
+                        const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
                   ),
                 ))
               ],

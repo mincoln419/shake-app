@@ -115,6 +115,7 @@ flutter:
     - assets/image/benefit/
     - assets/image/credit_card/
     - assets/image/stock/
+    - - assets/image/notification/
     - assets/translations/
     - assets/
 
