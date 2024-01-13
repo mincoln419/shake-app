@@ -31,3 +31,9 @@ class Width extends StatelessWidget {
     );
   }
 }
+
+
+const width5 = Width(5);
+const width10 = Width(10);
+const height5 = Height(5);
+const height10 = Height(10);
