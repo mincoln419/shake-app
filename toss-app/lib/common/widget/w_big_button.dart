@@ -11,13 +11,16 @@ class BigButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RoundedContainer(
-        child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        title.text.white.size(10).bold.make(),
-        Arrow(),
-      ],
-    ));
+    return Tap(
+      onTap: onTap,
+      child: RoundedContainer(
+          child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          title.text.white.size(10).bold.make(),
+          Arrow(),
+        ],
+      )),
+    );
   }
 }
