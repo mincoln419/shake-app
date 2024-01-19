@@ -1,8 +1,9 @@
-import 'package:fast_app_base/screen/main/tab/search/search_stock_data.dart';
-import 'package:fast_app_base/screen/main/tab/search/w_popular_search_stock_list.dart';
-import 'package:fast_app_base/screen/main/tab/search/w_saerch_history_stock.dart';
-import 'package:fast_app_base/screen/main/tab/search/w_search_auto_complete_list.dart';
-import 'package:fast_app_base/screen/main/tab/search/w_stock_search_app_bar.dart';
+
+import 'package:fast_app_base/screen/main/tab/stock/search/search_stock_data.dart';
+import 'package:fast_app_base/screen/main/tab/stock/search/w_popular_search_stock_list.dart';
+import 'package:fast_app_base/screen/main/tab/stock/search/w_saerch_history_stock.dart';
+import 'package:fast_app_base/screen/main/tab/stock/search/w_search_auto_complete_list.dart';
+import 'package:fast_app_base/screen/main/tab/stock/search/w_stock_search_app_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
