@@ -46,7 +46,7 @@ class _SearchStockScreenState extends State<SearchStockScreen> with SearchStockD
           SearchHistoryStockList(),
           PopularSearchStockList()
         ],):
-            SearchAutoCompleteList(),
+            SearchAutoCompleteList(controller),
       ),
 
     );
