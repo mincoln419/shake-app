@@ -1,9 +1,11 @@
 import 'package:fast_app_base/common/common.dart';
 import 'package:fast_app_base/screen/notification/s_notification.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 class TossBar extends StatefulWidget {
   static const double appBarHeight = 60;
+
   const TossBar({super.key});
 
   @override
@@ -11,7 +13,6 @@ class TossBar extends StatefulWidget {
 }
 
 class _TossBarState extends State<TossBar> {
-
   bool _showRedDot = false;
 
   @override
@@ -43,18 +44,23 @@ class _TossBarState extends State<TossBar> {
                   "$basePath/icon/notification.png",
                   height: 30,
                 ),
-                if(_showRedDot)Positioned.fill(
-                    child: Align(
-                  alignment: Alignment.topRight,
-                  child: Container(
-                    width: 6,
-                    height: 6,
-                    decoration:
-                        const BoxDecoration(shape: BoxShape.circle, color: Colors.red),
-                  ),
-                ))
+                if (_showRedDot)
+                  Positioned.fill(
+                      child: Align(
+                    alignment: Alignment.topRight,
+                    child: Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                          shape: BoxShape.circle, color: Colors.red),
+                    ),
+                  ))
               ],
-            ),
+            )
+                .animate(onComplete: (controller) => controller.repeat())
+                .shake(duration: 2000.ms, hz: 3)
+                .then()
+                .fadeOut(duration: 1000.ms),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:after_layout/after_layout.dart';
 import 'package:fast_app_base/common/cli_common.dart';
 import 'package:fast_app_base/common/common.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 
 import '../main/s_main.dart';
 
