@@ -8,6 +8,7 @@ import 'package:fast_app_base/screen/main/tab/stock/setting/w_animated_app_bar.d
 import 'package:fast_app_base/screen/main/tab/stock/setting/w_switch_menu.dart';
 import 'package:fast_app_base/screen/opensource/s_opensource.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:quiver/testing/src/time/time.dart';
 
 class SettingScreen extends StatefulWidget {
@@ -17,9 +18,11 @@ class SettingScreen extends StatefulWidget {
   State<SettingScreen> createState() => _SettingScreenState();
 }
 
-class _SettingScreenState extends State<SettingScreen> {
+class _SettingScreenState extends State<SettingScreen> with SingleTickerProviderStateMixin {
 
   final scrollController = ScrollController();
+
+  late final animationController = AnimationController(vsync: this, duration: 2000.ms);
 
   @override
   Widget build(BuildContext context) {
@@ -41,7 +44,10 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
                 Obx(() => Slider(
                     value: Prefs.slidePosition.get(),
-                    onChanged: (value) => {Prefs.slidePosition.set(value)})),
+                    onChanged: (value) => {
+                      animationController.animateTo(value, duration: 0.ms),
+                      Prefs.slidePosition.set(value)
+                    })),
                 Obx(
                   () => BigButton(
                       '날짜(${Prefs.birthDay.get() != null ? Prefs.birthDay.get()?.formattedDate : ''})',
@@ -97,6 +103,18 @@ class _SettingScreenState extends State<SettingScreen> {
                 ),
                 BigButton('오픈소스화면', onTap: () async {
                   Nav.push(OpensourceScreen());
+                }),
+                BigButton('Animation forward', onTap: () async {
+                  animationController.forward();
+                }),
+                BigButton('Animation reverse', onTap: () async {
+                  animationController.reverse();
+                }),
+                BigButton('Animation repeat', onTap: () async {
+                  animationController.repeat();
+                }),
+                BigButton('Animation reset', onTap: () async {
+                  animationController.reset();
                 }),
                 Obx(
                       () => BigButton(
@@ -199,7 +217,7 @@ class _SettingScreenState extends State<SettingScreen> {
 
               ],
             ),
-            AnimatedAppBar('설정', controller: scrollController),
+            AnimatedAppBar('설정', scrollController: scrollController, animationController: animationController,),
           ],
         ),
     );

@@ -1,4 +1,3 @@
-
 import 'package:fast_app_base/common/common.dart';
 import 'package:fast_app_base/common/widget/round_button_theme.dart';
 import 'package:fast_app_base/common/widget/w_round_button.dart';
@@ -8,6 +7,7 @@ import 'package:fast_app_base/screen/main/s_main.dart';
 import 'package:fast_app_base/screen/main/tab/home/bank_accounts_dummy.dart';
 import 'package:fast_app_base/screen/main/tab/home/vo/vo_bank_account.dart';
 import 'package:fast_app_base/screen/main/tab/home/w_bank_account.dart';
+import 'package:fast_app_base/screen/main/tab/home/w_rive_like_button.dart';
 import 'package:fast_app_base/screen/main/tab/home/w_toss_bar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -18,10 +18,17 @@ import '../../../../common/widget/w_big_button.dart';
 import '../../../dialog/d_color_bottom.dart';
 import '../../../dialog/d_confirm.dart';
 
-class HomeFragment extends StatelessWidget {
+class HomeFragment extends StatefulWidget {
   const HomeFragment({
     Key? key,
   }) : super(key: key);
+
+  @override
+  State<HomeFragment> createState() => _HomeFragmentState();
+}
+
+class _HomeFragmentState extends State<HomeFragment> {
+  bool isLiked = false;
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +36,9 @@ class HomeFragment extends StatelessWidget {
       child: Stack(
         children: [
           const LiveBackgroundWidget(
-            palette: Palette(colors: [Colors.red, Colors.green],),
+            palette: Palette(
+              colors: [Colors.red, Colors.green],
+            ),
             velocityX: 3,
             particleMaxSize: 20,
           ),
@@ -39,9 +48,23 @@ class HomeFragment extends StatelessWidget {
               await sleepAsync(500.ms);
             },
             child: SingleChildScrollView(
-              padding: EdgeInsets.only(top: TossBar.appBarHeight, bottom: MainScreenState.bottomNavigatorHeight),
+              padding: EdgeInsets.only(
+                  top: TossBar.appBarHeight,
+                  bottom: MainScreenState.bottomNavigatorHeight),
               child: Column(
                 children: [
+                  SizedBox(
+                    width: 250,
+                    height: 250,
+                    child: RiveLikeButtonWidget(
+                      isLiked,
+                      onTapLike: (bool isLiked) {
+                        setState(() {
+                          this.isLiked = isLiked;
+                        });
+                      },
+                    ),
+                  ),
                   BigButton(
                     "토스뱅크",
                     onTap: () {
@@ -49,7 +72,8 @@ class HomeFragment extends StatelessWidget {
                     },
                   ),
                   height10,
-                  RoundedContainer(child: Column(
+                  RoundedContainer(
+                      child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       "자산".text.white.bold.make(),
@@ -59,9 +83,8 @@ class HomeFragment extends StatelessWidget {
                           .toList()
                     ],
                   ))
-
                 ],
-              ).pSymmetric(h: 20).animate().slideY(duration: 3000.ms).fadeIn(),
+              ).pSymmetric(h: 20),
             ),
           ),
           TossBar(),
@@ -120,5 +143,3 @@ class HomeFragment extends StatelessWidget {
     Scaffold.of(context).openDrawer();
   }
 }
-
-
