@@ -4,16 +4,24 @@ import 'package:flutter/material.dart';
 import 'package:rive/rive.dart';
 import '../../home/w_rive_like_button.dart';
 
+class TextWatchingBearController {
+  late void Function() runSuccessAnimation;
+  late void Function() runFailureAnimation;
+}
+
 class TextWatchingBearWidget extends StatefulWidget {
   final bool check;
   final bool handsUP;
   final double look;
+  final TextWatchingBearController controller;
 
-  const TextWatchingBearWidget(
-      {super.key,
-      required this.check,
-      required this.handsUP,
-      required this.look});
+  const TextWatchingBearWidget({
+    super.key,
+    required this.check,
+    required this.handsUP,
+    required this.look,
+    required this.controller,
+  });
 
   @override
   State<TextWatchingBearWidget> createState() => _TextWatchingBearWidget();
@@ -24,9 +32,17 @@ class _TextWatchingBearWidget extends State<TextWatchingBearWidget> {
   late SMIBool smiCheck;
   late SMIBool smiHandsUp;
   late SMINumber smiLook;
+  late SMITrigger smiSuccess;
+  late SMITrigger smiFailure;
 
   @override
   void initState() {
+    widget.controller.runSuccessAnimation = (){
+      smiSuccess.fire();
+    };
+    widget.controller.runFailureAnimation= (){
+      smiFailure.fire();
+    };
     super.initState();
   }
 
@@ -60,6 +76,8 @@ class _TextWatchingBearWidget extends State<TextWatchingBearWidget> {
         smiCheck = controller.findInput<bool>("Check") as SMIBool;
         smiHandsUp = controller.findInput<bool>("hands_up") as SMIBool;
         smiLook = controller.findInput<double>("Look") as SMINumber;
+        smiSuccess = controller.findInput<bool>("success") as SMITrigger;
+        smiFailure = controller.findInput<bool>("fail") as SMITrigger;
       },
     );
   }

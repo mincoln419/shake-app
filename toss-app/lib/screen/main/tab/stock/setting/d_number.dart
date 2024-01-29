@@ -4,6 +4,7 @@ import 'package:fast_app_base/screen/main/tab/stock/setting/w_text_watching.dart
 import 'package:fast_app_base/screen/notification/vo/v_toss_notification.dart';
 import 'package:fast_app_base/screen/notification/w_notification_item.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
 import 'package:nav/dialog/dialog.dart';
 
 class NumberDialog extends DialogWidget<int> {
@@ -21,6 +22,7 @@ class _NotificationDialogState extends DialogState<NumberDialog> {
   final passwordController = TextEditingController();
   final numberFocus = new FocusNode();
   final passwordFocus = new FocusNode();
+  final textBearController = TextWatchingBearController();
 
   bool check = false;
   bool handsUp = false;
@@ -65,6 +67,7 @@ class _NotificationDialogState extends DialogState<NumberDialog> {
               check: check,
               handsUP: handsUp,
               look: look,
+              controller: textBearController,
             ),
           ),
           TextField(
@@ -80,9 +83,16 @@ class _NotificationDialogState extends DialogState<NumberDialog> {
           ),
           RoundButton(
               text: '완료',
-              onTap: () {
+              onTap: () async {
                 final fieldText = textController.text;
-                widget.hide(int.parse(fieldText));
+                try{
+                  int number = int.parse(fieldText);
+                  textBearController.runSuccessAnimation();
+                  await sleepAsync(1000.ms);
+                  widget.hide(number);
+                }catch(e){
+                  textBearController.runFailureAnimation();
+                }
               })
         ],
       ),
