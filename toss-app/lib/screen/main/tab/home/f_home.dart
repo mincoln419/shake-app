@@ -4,6 +4,7 @@ import 'package:fast_app_base/common/widget/w_round_button.dart';
 import 'package:fast_app_base/common/widget/w_rounded_container.dart';
 import 'package:fast_app_base/screen/dialog/d_message.dart';
 import 'package:fast_app_base/screen/main/s_main.dart';
+import 'package:fast_app_base/screen/main/stream_test.dart';
 import 'package:fast_app_base/screen/main/tab/home/bank_accounts_dummy.dart';
 import 'package:fast_app_base/screen/main/tab/home/vo/vo_bank_account.dart';
 import 'package:fast_app_base/screen/main/tab/home/w_bank_account.dart';
@@ -27,8 +28,17 @@ class HomeFragment extends StatefulWidget {
   State<HomeFragment> createState() => _HomeFragmentState();
 }
 
+Stream<int> countStream(int max) async* {
+  await sleepAsync(2.seconds);
+  for (int i = 1; i <= max; i++) {
+    yield i;
+    await sleepAsync(1.seconds);
+  }
+}
+
 class _HomeFragmentState extends State<HomeFragment> {
   bool isLiked = false;
+  late final stream = countStream(5).asBroadcastStream();
 
   @override
   Widget build(BuildContext context) {
@@ -53,6 +63,42 @@ class _HomeFragmentState extends State<HomeFragment> {
                   bottom: MainScreenState.bottomNavigatorHeight),
               child: Column(
                 children: [
+                  StreamBuilder(
+                      stream: stream,
+                      builder: (context, snapshot) {
+                        final count = snapshot.data;
+
+                        switch(snapshot.connectionState){
+                          case ConnectionState.active:
+                            if(count == null){
+                              return const CircularProgressIndicator();
+                            }
+                            return count.text.size(30).bold.make();
+                          case ConnectionState.waiting:
+                          case ConnectionState.none:
+                            return const CircularProgressIndicator();
+                          case ConnectionState.done:
+                            return '완료'.text.size(30).bold.make();
+                        }
+                      }),
+                  StreamBuilder(
+                      stream: stream,
+                      builder: (context, snapshot) {
+                        final count = snapshot.data;
+
+                        switch(snapshot.connectionState){
+                          case ConnectionState.active:
+                            if(count == null){
+                              return const CircularProgressIndicator();
+                            }
+                            return count.text.size(30).bold.make();
+                          case ConnectionState.waiting:
+                          case ConnectionState.none:
+                            return const CircularProgressIndicator();
+                          case ConnectionState.done:
+                            return '완료'.text.size(30).bold.make();
+                        }
+                      }),
                   SizedBox(
                     width: 250,
                     height: 250,
