@@ -34,8 +34,9 @@ class LocalJson {
 T _tryConverting<T>(dynamic json) {
   switch (T) {
     case SimpleStock:
-    default:
       return SimpleStock.fromJson(json) as T;
+    default:
+      return Package.fromJson(json) as T;
   }
   // switch (T) {
   //   case ExampleVO:

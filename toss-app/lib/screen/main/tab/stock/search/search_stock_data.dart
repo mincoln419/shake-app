@@ -5,11 +5,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 abstract mixin class SearchStockDataProvider {
-
   late final searchData = Get.find<SearchStockData>();
-
 }
-
 
 class SearchStockData extends GetxController {
   List<SimpleStock> stocks = [];
@@ -31,14 +28,20 @@ class SearchStockData extends GetxController {
   }
 
   void search(String keyword) {
-
-    if(keyword.isEmpty){
+    if (keyword.isEmpty) {
       autoCompleteList.clear();
       return;
     }
 
     autoCompleteList.value =
         stocks.where((element) => element.stockName.contains(keyword)).toList();
+  }
 
+  void addHistory(SimpleStock stock) {
+    searchHistoryList.add(stock.stockName);
+  }
+
+  void removeHistory(String stockName) {
+    searchHistoryList.remove(stockName);
   }
 }
