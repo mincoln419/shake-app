@@ -49,4 +49,6 @@ abstract class AbstractThemeColors {
   Color get checkBoxColor => const Color.fromARGB(255, 64, 206, 64);
 
   Color get itemBackground => Colors.white;
+
+  Color get deleteBackground => const Color.fromARGB(255, 204, 145, 163);
 }

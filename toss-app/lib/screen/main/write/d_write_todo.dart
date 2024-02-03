@@ -5,12 +5,16 @@ import 'package:fast_app_base/common/util/app_keyboard_util.dart';
 import 'package:fast_app_base/common/widget/rounded_container.dart';
 import 'package:fast_app_base/common/widget/scaffold/bottom_dialog_scaffold.dart';
 import 'package:fast_app_base/common/widget/w_round_button.dart';
+import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
 import 'package:fast_app_base/screen/main/write/vo_write_todo.dart';
 import 'package:flutter/material.dart';
 import 'package:nav/dialog/dialog.dart';
 
 class WriteTodoDialog extends DialogWidget<WriteTodoResult> {
-  WriteTodoDialog({super.key});
+
+  final Todo? todoForEdit;
+
+  WriteTodoDialog({super.key, this.todoForEdit});
 
   @override
   DialogState<WriteTodoDialog> createState() => _WriteTodoDialogState();
@@ -22,6 +26,17 @@ class _WriteTodoDialogState extends DialogState<WriteTodoDialog>
   final textEditingController = TextEditingController();
 
   final node = FocusNode();
+
+  get isEditMode => widget.todoForEdit != null;
+
+  @override
+  void initState() {
+    if(isEditMode){
+      _selectedDate = widget.todoForEdit!.dueDtm;
+      textEditingController.text = widget.todoForEdit!.title;
+    }
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +66,7 @@ class _WriteTodoDialogState extends DialogState<WriteTodoDialog>
                 ),
               ),
               RoundButton(
-                  text: "추가",
+                  text: isEditMode? "수정":"추가",
                   onTap: () {
                     widget.hide(WriteTodoResult(
                       _selectedDate,

@@ -1,6 +1,5 @@
 import 'package:eva_icons_flutter/eva_icons_flutter.dart';
 import 'package:fast_app_base/common/dart/extension/datetime_extension.dart';
-import 'package:fast_app_base/data/memory/vo/todo_data_holder.dart';
 import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
 import 'package:fast_app_base/screen/main/tab/tab_item.dart';
 import 'package:fast_app_base/screen/main/tab/tab_navigator.dart';
@@ -57,18 +56,7 @@ class MainScreenState extends State<MainScreen>
         ),
         floatingActionButton: FloatingActionButton(
           onPressed: () async {
-            final result = await WriteTodoDialog().show();
-            if (result != null) {
-              String text = result.text;
-              DateTime dueDtm = result.dateTime;
-              debugPrint(text);
-              debugPrint(dueDtm.formattedDate);
-              TodoDataHolder.of(context).todoDataNotifier.addToto(Todo(
-                    id: dueDtm.millisecond,
-                    title: text,
-                    dueDtm: dueDtm,
-                  ));
-            }
+            context.holder.addTodo();
           },
           child: const Icon(EvaIcons.plus),
         ),

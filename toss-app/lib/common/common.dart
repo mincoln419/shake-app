@@ -23,6 +23,8 @@ export 'widget/w_height_and_width.dart';
 export 'widget/w_line.dart';
 export 'widget/w_tap.dart';
 export 'widget/constant_widget.dart';
+export 'package:fast_app_base/data/memory/vo/todo_data_holder.dart';
+
 
 const defaultFontStyle = GoogleFonts.ptSerif;
 

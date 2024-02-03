@@ -29,11 +29,11 @@ extension DateTimeExtension on DateTime {
     .tr(namedArgs: {"daysCount": difference(DateTime.now().onlyDate).inDays.toString()})
   ;
 
-  String get _tillToday => 'dayLeft';
+  String get _tillToday => 'tillToday'.tr();
 
-  String get _tillTomorrow => 'dayLeft';
+  String get _tillTomorrow => 'tillTomorrow'.tr();
 
   String get _daysPassed => 'daysPassed'
-      .tr(namedArgs: {"daysCount": difference(DateTime.now().onlyDate).inDays.toString()})
+      .tr(namedArgs: {"daysCount": (difference(DateTime.now().onlyDate).inDays * -1).toString()})
   ;
 }
