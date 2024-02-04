@@ -1,28 +1,20 @@
 import 'package:fast_app_base/common/common.dart';
 import 'package:fast_app_base/screen/main/tab/todo/w_todo_item.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 
-class TodoList extends StatefulWidget {
-  const TodoList({super.key});
+class TodoList extends StatelessWidget with TodoDataProvider {
+  TodoList({super.key});
 
-  @override
-  State<TodoList> createState() => _TodoListState();
-}
-
-class _TodoListState extends State<TodoList> {
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder(
-      valueListenable: context.holder.todoDataNotifier,
-      builder: (context, todoList, child) {
-        return todoList.isEmpty
-            ? '할일을 작성하세요'.text.size(30).makeCentered()
-            : Column(
-                children: todoList
-                    .map((e) => TodoItem(todo: e))
-                    .toList(),
-              );
-      },
+    return Obx(
+      () => todoData.todoList.isEmpty
+          ? '할일을 작성하세요'.text.size(30).makeCentered()
+          : Column(
+              children:
+                  todoData.todoList.map((e) => TodoItem(todo: e)).toList(),
+            ),
     );
   }
 }

@@ -6,16 +6,16 @@ import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
 import 'package:fast_app_base/screen/main/tab/todo/w_todo_status.dart';
 import 'package:flutter/material.dart';
 
-class TodoItem extends StatelessWidget {
+class TodoItem extends StatelessWidget with TodoDataProvider{
   final Todo todo;
 
-  const TodoItem({super.key, required this.todo});
+  TodoItem({super.key, required this.todo});
 
   @override
   Widget build(BuildContext context) {
     return Dismissible(
       onDismissed: (direction){
-        context.holder.todoDataNotifier.removeTodo(todo);
+        todoData.remove(todo);
       },
       background: RoundedContainer(
         color: context.appColors.deleteBackground,
@@ -61,7 +61,7 @@ class TodoItem extends StatelessWidget {
               ),
               IconButton(
                 onPressed: () async {
-                  context.holder.editTodo(todo);
+                  todoData.editTodo(todo);
                 },
                 icon: const Icon(EvaIcons.editOutline),
               )
