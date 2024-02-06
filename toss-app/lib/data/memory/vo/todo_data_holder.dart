@@ -1,5 +1,5 @@
 import 'package:fast_app_base/common/dart/extension/datetime_extension.dart';
-import 'package:fast_app_base/data/memory/vo/enum_todo_status.dart';
+import 'package:fast_app_base/data/memory/vo/todo_status.dart';
 import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
 import 'package:fast_app_base/screen/dialog/d_confirm.dart';
 import 'package:fast_app_base/screen/main/write/d_write_todo.dart';
@@ -16,14 +16,14 @@ class TodoDataHolder extends GetxController {
 
   void changeTodoStatus(Todo todo) async{
     switch(todo.status){
-      case TodoStatus.undo:
-        todo.status = TodoStatus.onGoing;
-      case TodoStatus.onGoing:
-        todo.status = TodoStatus.done;
-      case TodoStatus.done:
+      case TodoStatus.incomplete:
+        todo.status = TodoStatus.ongoing;
+      case TodoStatus.ongoing:
+        todo.status = TodoStatus.complete;
+      case TodoStatus.complete:
         final confirm = await ConfirmDialog("초기화 하시겠습니까?").show();
         confirm?.runIfSuccess((data) => {
-          todo.status = TodoStatus.undo
+          todo.status = TodoStatus.incomplete
         });
     }
     todoList.refresh();
