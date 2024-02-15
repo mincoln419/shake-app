@@ -1,17 +1,24 @@
 import 'package:fast_app_base/common/dart/extension/datetime_extension.dart';
+import 'package:fast_app_base/data/local/local_db.dart';
 import 'package:fast_app_base/data/memory/vo/todo_status.dart';
 import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
+import 'package:fast_app_base/data/remote/todo_api.dart';
+import 'package:fast_app_base/data/todo_repository.dart';
 import 'package:fast_app_base/screen/dialog/d_confirm.dart';
 import 'package:fast_app_base/screen/main/write/d_write_todo.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
 class TodoDataHolder extends GetxController {
-  final RxList<Todo> todoList = <Todo>[].obs;
+  late final RxList<Todo> todoList = <Todo>[].obs;
 
-  static TodoDataHolder _of(BuildContext context){
-    TodoDataHolder inherited = (context.dependOnInheritedWidgetOfExactType())!;
-    return inherited;
+  final TodoRepository todoRepository = TodoApi.instance;
+
+  @override
+  void onInit() async {
+    final getTodoResult = await todoRepository.getTodoList();
+    getTodoResult.runIfSuccess((data) => todoList.addAll(data));
+    super.onInit();
   }
 
   void changeTodoStatus(Todo todo) async{
@@ -26,6 +33,7 @@ class TodoDataHolder extends GetxController {
           todo.status = TodoStatus.incomplete
         });
     }
+    todoRepository.updateTodo(todo);
     todoList.refresh();
   }
 
@@ -36,12 +44,15 @@ class TodoDataHolder extends GetxController {
       DateTime dueDtm = result.dateTime;
       debugPrint(text);
       debugPrint(dueDtm.formattedDate);
-      todoList.add(Todo(
+      Todo todo = Todo(
         id: dueDtm.millisecond,
         title: text,
         dueDtm: dueDtm,
-      ));
+      );
+      todoList.add(todo);
+      todoRepository.addTodo(todo);
     }
+
   }
 
   void editTodo(Todo todo) async{
@@ -50,13 +61,14 @@ class TodoDataHolder extends GetxController {
     if(result !=null) {
       todo.title = result.text;
       todo.dueDtm = result.dateTime;
+      todoRepository.updateTodo(todo);
       todoList.refresh();
     }
   }
 
   void remove(Todo todo) {
+    todoRepository.removeTodo(todo.id);
     todoList.remove(todo);
-    todoList.refresh();
   }
 }
 
