@@ -1,3 +1,4 @@
+import 'package:calculator_basic_starter/data/repository/calculator.dart';
 import 'package:calculator_basic_starter/presentation/view_model/calculator.dart';
 import 'package:calculator_basic_starter/ui/ui.dart';
 import 'package:flutter/material.dart';
@@ -13,7 +14,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   final CalculatorViewModel _viewModel = CalculatorViewModel(
     FetchCalculatorUseCase(),
     SaveCalculatorUseCase(),
-    Calculator(),
+    CalculatorEntity(),
   );
 
   @override
@@ -31,7 +32,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Calculator'),
       ),
-      body: ValueListenableBuilder<Calculator>(
+      body: ValueListenableBuilder<CalculatorEntity>(
           valueListenable: _viewModel,
           builder: (context, calculator, child) {
             return Column(
