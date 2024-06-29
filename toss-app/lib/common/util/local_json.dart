@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:fast_app_base/screen/main/tab/stock/vo_simple_stock.dart';
 import 'package:flutter/services.dart';
 
 import '../../screen/opensource/vo_package.dart';
@@ -32,10 +33,10 @@ class LocalJson {
 
 T _tryConverting<T>(dynamic json) {
   switch (T) {
-    case Package:
-      return Package.fromJson(json) as T;
+    case SimpleStock:
+      return SimpleStock.fromJson(json) as T;
     default:
-      throw Exception("Please check _tryConverting method");
+      return Package.fromJson(json) as T;
   }
   // switch (T) {
   //   case ExampleVO:
