@@ -1,5 +1,6 @@
 
-import 'package:calculator_modularization_presentation_starter/domain/domain.dart';
+import 'package:calculator_modularization_domain/domain.dart';
+import 'package:calculator_modularization_domain/src/util/use_case.dart';
 
 class SaveCalculatorUseCase extends IUseCase {
   final ICalculatorRepository _iCalculatorRepository;

@@ -1,6 +1,4 @@
-
-
-import 'package:calculator_modularization_presentation_starter/domain/domain.dart';
+import 'package:calculator_modularization_domain/domain.dart';
 
 abstract class ICalculatorRepository {
 

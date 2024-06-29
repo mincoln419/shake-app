@@ -1,6 +1,4 @@
-
-
-import 'package:calculator_modularization_presentation_starter/util/formatter.dart';
+import 'package:calculator_modularization_domain/src/util/formatter.dart';
 
 class CalculatorEntity {
   String _result;

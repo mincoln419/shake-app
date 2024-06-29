@@ -1,10 +1,7 @@
 
 import 'package:calculator_modularization_data/data.dart';
+import 'package:calculator_modularization_domain/domain.dart';
 import 'package:calculator_modularization_presentation/presentation.dart';
-import 'package:calculator_modularization_presentation_starter/domain/domain.dart';
-import 'package:calculator_modularization_presentation_starter/domain/use_case/fetch_calculator.dart';
-import 'package:calculator_modularization_presentation_starter/domain/use_case/save_calculator.dart';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

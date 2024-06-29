@@ -1,7 +1,7 @@
 
 import 'package:calculator_modularization_data/src/model/calculator.dart';
 import 'package:calculator_modularization_data/src/source/source.dart';
-import 'package:calculator_modularization_presentation_starter/domain/domain.dart';
+import 'package:calculator_modularization_domain/domain.dart';
 
 class CalculatorRepository extends ICalculatorRepository{
   final CalculatorDataSource _calculatorDataSource;
