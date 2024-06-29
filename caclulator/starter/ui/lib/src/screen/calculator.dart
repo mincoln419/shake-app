@@ -1,7 +1,7 @@
 
 import 'package:calculator_modularization_domain/domain.dart';
 import 'package:calculator_modularization_presentation/presentation.dart';
-import 'package:calculator_modularization_presentation_starter/ui/ui.dart';
+import 'package:calculator_modularization_ui/src/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 

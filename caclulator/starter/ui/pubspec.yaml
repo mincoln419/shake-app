@@ -1,4 +1,4 @@
-name: calculator_modularization_presentation_starter
+name: calculator_modularization_ui
 description: A new Flutter project.
 version: 1.0.0+1
 publish_to: none
@@ -10,17 +10,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: 1.0.6
-  provider: 6.1.1
 
   calculator_modularization_presentation:
-    path: presentation
+    path: ../presentation
   calculator_modularization_data:
-    path: data
+    path: ../data
   calculator_modularization_domain:
-    path: domain
-  calculator_modularization_ui:
-    path: ui
+    path: ../domain
 
 dev_dependencies:
   flutter_lints: 3.0.1
