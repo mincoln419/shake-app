@@ -1,5 +1,5 @@
 
-import 'package:calculator_modularization_presentation_starter/di/provider/calculator.dart';
+import 'package:calculator_modularization_di/di.dart';
 import 'package:calculator_modularization_ui/ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
