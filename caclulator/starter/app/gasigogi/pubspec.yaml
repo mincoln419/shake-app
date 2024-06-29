@@ -1,0 +1,20 @@
+name: gasigogi
+description: A new Flutter project.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: 3.3.0
+  flutter: 3.16.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: 1.0.6
+  provider: 6.1.1
+
+  feature_calculator:
+    path: ../../feature/carculator/target/gasigogi
+
+dev_dependencies:
+  flutter_lints: 3.0.1

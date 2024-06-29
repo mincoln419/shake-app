@@ -2,6 +2,7 @@ import 'package:after_layout/after_layout.dart';
 import 'package:fast_app_base/common/cli_common.dart';
 import 'package:fast_app_base/screen/main/tab/tab_item.dart';
 import 'package:fast_app_base/screen/main/tab/tab_navigator.dart';
+import 'package:fast_app_base/screen/main/write/d_write_todo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_native_splash/flutter_native_splash.dart';
@@ -29,7 +30,8 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
 
   int get _currentIndex => tabs.indexOf(_currentTab);
 
-  GlobalKey<NavigatorState> get _currentTabNavigationKey => navigatorKeys[_currentIndex];
+  GlobalKey<NavigatorState> get _currentTabNavigationKey =>
+      navigatorKeys[_currentIndex];
 
   bool get extendBody => true;
 
@@ -49,7 +51,8 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
       canPop: false,
       onPopInvoked: _handleBackPressed,
       child: Scaffold(
-        extendBody: extendBody, //bottomNavigationBar 아래 영역 까지 그림
+        extendBody: extendBody,
+        //bottomNavigationBar 아래 영역 까지 그림
         drawer: const MenuDrawer(),
         body: Container(
           color: Colors.black,
@@ -58,6 +61,12 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
             bottom: !extendBody,
             child: pages,
           ),
+        ),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () async {
+            todoData.addTodo();
+          },
+          child: const Icon(EvaIcons.plus),
         ),
         bottomNavigationBar: _buildBottomNavigationBar(context),
       ),
@@ -140,13 +149,15 @@ class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMi
     });
   }
 
-  BottomNavigationBarItem bottomItem(
-      bool activate, IconData iconData, IconData inActivateIconData, String label) {
+  BottomNavigationBarItem bottomItem(bool activate, IconData iconData,
+      IconData inActivateIconData, String label) {
     return BottomNavigationBarItem(
         icon: Icon(
           key: ValueKey(label),
           activate ? iconData : inActivateIconData,
-          color: activate ? context.appColors.iconButton : context.appColors.iconButtonInactivate,
+          color: activate
+              ? context.appColors.iconButton
+              : context.appColors.iconButtonInactivate,
         ),
         label: label);
   }

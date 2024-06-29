@@ -1,2 +1,3 @@
 const basePath = 'assets/image';
-const baseRivePath = 'assets/rive';
+
+const baseRivPath = 'assets/riv';

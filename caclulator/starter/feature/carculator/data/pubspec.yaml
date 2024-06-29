@@ -1,0 +1,19 @@
+name: calculator_modularization_data
+description: A new Flutter project.
+version: 1.0.0+1
+publish_to: none
+
+environment:
+  sdk: 3.3.0
+  flutter: 3.16.9
+
+dependencies:
+  flutter:
+    sdk: flutter
+  shared_preferences: 2.2.2
+
+  calculator_modularization_domain:
+    path: ../domain
+
+dev_dependencies:
+  flutter_lints: 3.0.1
