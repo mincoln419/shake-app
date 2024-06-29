@@ -1,4 +1,4 @@
-import 'package:calculator_modularization_presentation_starter/data/source/local/calculator.dart';
+import 'package:calculator_modularization_data/src/source/calculator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CalculatorLocalDataSource implements ICalculatorLocalDataSource {
