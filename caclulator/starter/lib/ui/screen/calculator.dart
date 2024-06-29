@@ -1,7 +1,9 @@
-import 'package:calculator_basic_starter/data/repository/calculator.dart';
-import 'package:calculator_basic_starter/presentation/view_model/calculator.dart';
-import 'package:calculator_basic_starter/ui/ui.dart';
+
+import 'package:calculator_modularization_presentation/presentation.dart';
+import 'package:calculator_modularization_presentation_starter/domain/domain.dart';
+import 'package:calculator_modularization_presentation_starter/ui/ui.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
 class CalculatorScreen extends StatefulWidget {
   const CalculatorScreen({super.key});
@@ -11,16 +13,11 @@ class CalculatorScreen extends StatefulWidget {
 }
 
 class _CalculatorScreenState extends State<CalculatorScreen> {
-  final CalculatorViewModel _viewModel = CalculatorViewModel(
-    FetchCalculatorUseCase(),
-    SaveCalculatorUseCase(),
-    CalculatorEntity(),
-  );
 
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      await _viewModel.load();
+      await context.read<CalculatorViewModel>().load();
     });
     super.initState();
   }
@@ -33,7 +30,7 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
         title: const Text('Calculator'),
       ),
       body: ValueListenableBuilder<CalculatorEntity>(
-          valueListenable: _viewModel,
+          valueListenable: context.read<CalculatorViewModel>(),
           builder: (context, calculator, child) {
             return Column(
               children: [
@@ -189,10 +186,10 @@ class _CalculatorScreenState extends State<CalculatorScreen> {
   Future<void> _perform(String buttonText, {
     bool save = false,
   }) async {
-    _viewModel.calculate(buttonText);
+    context.read<CalculatorViewModel>().calculate(buttonText);
 
     if(save){
-      await _viewModel.save();
+      await context.read<CalculatorViewModel>().save();
     }
   }
 }

@@ -1,5 +1,6 @@
-import 'package:calculator_basic_starter/data/model/calculator.dart';
-import 'package:calculator_basic_starter/data/soruce/local/calculator.dart';
+
+import 'package:calculator_modularization_presentation_starter/data/model/calculator.dart';
+import 'package:calculator_modularization_presentation_starter/data/source/local/calculator.dart';
 
 class CalculatorDataSource {
   final ICalculatorLocalDataSource _localDataSource;

@@ -1,4 +1,6 @@
-import 'package:calculator_basic_starter/ui/ui.dart';
+
+import 'package:calculator_modularization_presentation_starter/di/provider/calculator.dart';
+import 'package:calculator_modularization_presentation_starter/ui/screen/calculator.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -27,7 +29,9 @@ class _CalculatorAppState extends State<CalculatorApp> {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const CalculatorScreen(),
+      home: const CalculatorProvider(
+        child: CalculatorScreen(),
+      ),
     );
   }
 }
