@@ -17,6 +17,9 @@ dependencies:
     path: ../data
   calculator_modularization_domain:
     path: ../domain
+  calculator_modularization_di:
+    path: ../di
+
 
 dev_dependencies:
   flutter_lints: 3.0.1

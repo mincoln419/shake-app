@@ -13,16 +13,9 @@ dependencies:
   cupertino_icons: 1.0.6
   provider: 6.1.1
 
-  calculator_modularization_presentation:
-    path: presentation
-  calculator_modularization_data:
-    path: data
-  calculator_modularization_domain:
-    path: domain
+
   calculator_modularization_ui:
-    path: ui
-  calculator_modularization_di:
-    path: di
+    path: feature/carculator/ui
 
 dev_dependencies:
   flutter_lints: 3.0.1

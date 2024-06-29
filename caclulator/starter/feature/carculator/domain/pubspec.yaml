@@ -11,7 +11,7 @@ dependencies:
   flutter:
     sdk: flutter
   calculator_modularization_presentation_starter:
-    path: ../
+    path: ../../../
 
 dev_dependencies:
   flutter_lints: 3.0.1
