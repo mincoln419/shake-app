@@ -13,9 +13,8 @@ dependencies:
   cupertino_icons: 1.0.6
   provider: 6.1.1
 
-
-  calculator_modularization_ui:
-    path: ../../feature/carculator/ui
+  feature_calculator:
+    path: ../../feature/carculator/target/gasigogi
 
 dev_dependencies:
   flutter_lints: 3.0.1

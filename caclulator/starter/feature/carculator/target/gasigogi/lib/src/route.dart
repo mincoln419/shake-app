@@ -1,5 +1,5 @@
 import 'package:calculator_modularization_di/di.dart';
-import 'package:calculator_modularization_ui/src/screen/calculator.dart';
+import 'package:feature_calculator/gasigogi.dart';
 import 'package:flutter/material.dart';
 
 abstract class ICalculatorRouteTo {
