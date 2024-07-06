@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 abstract class ChatEvent {}
 
@@ -14,16 +15,6 @@ class AddChatEvent extends ChatEvent {
 }
 
 class ChatBloc extends Bloc<ChatEvent, List<ChatItem>> {
-  // final List<ChatItem> _items = [];
-  //
-  // final StreamController<ChatEvent> _eventController = StreamController<ChatEvent>();
-  //
-  // Sink<ChatEvent> get eventSink => _eventController.sink;
-  //
-  // final StreamController<List<ChatItem>> _stateController = StreamController();
-  //
-  // Stream<List<ChatItem>> get stateStream => _stateController.stream;
-
   final Stream<int> _stream =
       Stream<int>.periodic(const Duration(seconds: 5), (count) => count)
           .take(5);
@@ -68,20 +59,18 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final ChatBloc bloc = ChatBloc();
-  final List<ChatItem> items = [];
 
   @override
   void initState() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      bloc.startAutoMessage();
+      context.read<ChatBloc>().startAutoMessage();
     });
     super.initState();
   }
 
   @override
   void dispose() {
-    bloc.close();
+    context.read<ChatBloc>().close();
     super.dispose();
   }
 
@@ -92,40 +81,39 @@ class _ChatScreenState extends State<ChatScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         title: const Text('Stream'),
       ),
-      body: StreamBuilder<List<ChatItem>>(
-        initialData:bloc.state,
-          stream: bloc.stream,
-          builder: (context, snapshot) {
-            final List<ChatItem> items = snapshot.data ?? [];
-            return ListView.separated(
-              padding: const EdgeInsets.all(16.0),
-              reverse: true,
-              shrinkWrap: true,
-              itemBuilder: (context, index) {
-                final ChatItem item = items.reversed.toList()[index];
-                if (item.isMe) {
-                  return ChatTile.right(
-                    message: item.message,
-                  );
-                } else {
-                  return ChatTile.left(
-                    message: item.message,
-                  );
-                }
-              },
-              separatorBuilder: (context, index) => const SizedBox(
-                height: 8,
-              ),
-              itemCount: items.length,
-            );
-          }),
+      body: BlocBuilder<ChatBloc, List<ChatItem>>(
+        builder: (context, state) {
+          final List<ChatItem> items = state;
+          return ListView.separated(
+            padding: const EdgeInsets.all(16.0),
+            reverse: true,
+            shrinkWrap: true,
+            itemBuilder: (context, index) {
+              final ChatItem item = items.reversed.toList()[index];
+              if (item.isMe) {
+                return ChatTile.right(
+                  message: item.message,
+                );
+              } else {
+                return ChatTile.left(
+                  message: item.message,
+                );
+              }
+            },
+            separatorBuilder: (context, index) => const SizedBox(
+              height: 8,
+            ),
+            itemCount: items.length,
+          );
+        },
+      ),
       bottomNavigationBar: ChatBottomNavigationBar(
         onSend: (message) {
           final ChatItem item = ChatItem(
             message: message,
           );
           AddChatEvent event = AddChatEvent(item: item);
-          bloc.add(event);
+          context.read<ChatBloc>().add(event);
         },
       ),
     );
