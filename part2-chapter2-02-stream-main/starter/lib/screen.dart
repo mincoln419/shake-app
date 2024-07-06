@@ -1,10 +1,10 @@
 import 'dart:async';
 
+import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 
-abstract class ChatEvent {
+abstract class ChatEvent {}
 
-}
 class AddChatEvent extends ChatEvent {
   final ChatItem item;
 
@@ -13,61 +13,49 @@ class AddChatEvent extends ChatEvent {
   });
 }
 
-class ChatBloc {
+class ChatBloc extends Bloc<ChatEvent, List<ChatItem>> {
+  // final List<ChatItem> _items = [];
+  //
+  // final StreamController<ChatEvent> _eventController = StreamController<ChatEvent>();
+  //
+  // Sink<ChatEvent> get eventSink => _eventController.sink;
+  //
+  // final StreamController<List<ChatItem>> _stateController = StreamController();
+  //
+  // Stream<List<ChatItem>> get stateStream => _stateController.stream;
 
-  final List<ChatItem> _items = [];
+  final Stream<int> _stream =
+      Stream<int>.periodic(const Duration(seconds: 5), (count) => count)
+          .take(5);
 
-  final StreamController<ChatEvent> _eventController = StreamController<ChatEvent>();
-
-  Sink<ChatEvent> get eventSink => _eventController.sink;
-
-  final StreamController<List<ChatItem>> _stateController = StreamController();
-
-  Stream<List<ChatItem>> get stateStream => _stateController.stream;
-
-  final Stream<int> _stream = Stream<int>.periodic(const Duration(seconds: 5), (count) => count).take(5);
-
-  ChatBloc(){
-    _eventController.stream.listen((event) {
-      if(event is AddChatEvent){
-        _items.add(event.item);
-      }
-      _stateController.sink.add(_items);
-    });
+  ChatBloc() : super([]) {
+    on<AddChatEvent>((event, emit) => emit([...state, event.item]));
   }
-
-  void dispose(){
-    _eventController.close();
-    _stateController.close();
-  }
-
 
   void startAutoMessage() {
-    int count = 0;
+    _stream.listen(
+      (count) {
+        if (count == 5) {
+          return;
+        }
 
-    _stream.listen((count) {
-      if (count == 5) {
-        return;
-      }
+        final String message;
+        if (count == 0) {
+          message = '채팅을 시작합니다.';
+        } else if (count == 4) {
+          message = '채팅을 종료합니다.';
+        } else {
+          message = '안녕하세요.' * count;
+        }
 
-      final String message;
-      if (count == 0) {
-        message = '채팅을 시작합니다.';
-      } else if (count == 4) {
-        message = '채팅을 종료합니다.';
-      } else {
-        message = '안녕하세요.' * count;
-      }
+        final ChatItem item = ChatItem(
+          message: message,
+          isMe: false,
+        );
 
-      final ChatItem item = ChatItem(
-        message: message,
-        isMe: false,
-      );
-
-      _items.add(item);
-      _stateController.sink.add(_items);
-      count++;
-    },
+        final AddChatEvent event = AddChatEvent(item: item);
+        add(event);
+      },
     );
   }
 }
@@ -80,7 +68,6 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-
   final ChatBloc bloc = ChatBloc();
   final List<ChatItem> items = [];
 
@@ -94,11 +81,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    bloc.dispose();
+    bloc.close();
     super.dispose();
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -108,39 +93,39 @@ class _ChatScreenState extends State<ChatScreen> {
         title: const Text('Stream'),
       ),
       body: StreamBuilder<List<ChatItem>>(
-        stream: bloc.stateStream,
-        builder: (context, snapshot) {
-          final List<ChatItem> items = snapshot.data ?? [];
-          return ListView.separated(
-            padding: const EdgeInsets.all(16.0),
-            reverse: true,
-            shrinkWrap: true,
-            itemBuilder: (context, index) {
-              final ChatItem item = items.reversed.toList()[index];
-              if (item.isMe) {
-                return ChatTile.right(
-                  message: item.message,
-                );
-              } else {
-                return ChatTile.left(
-                  message: item.message,
-                );
-              }
-            },
-            separatorBuilder: (context, index) => const SizedBox(
-              height: 8,
-            ),
-            itemCount: items.length,
-          );
-        }
-      ),
+        initialData:bloc.state,
+          stream: bloc.stream,
+          builder: (context, snapshot) {
+            final List<ChatItem> items = snapshot.data ?? [];
+            return ListView.separated(
+              padding: const EdgeInsets.all(16.0),
+              reverse: true,
+              shrinkWrap: true,
+              itemBuilder: (context, index) {
+                final ChatItem item = items.reversed.toList()[index];
+                if (item.isMe) {
+                  return ChatTile.right(
+                    message: item.message,
+                  );
+                } else {
+                  return ChatTile.left(
+                    message: item.message,
+                  );
+                }
+              },
+              separatorBuilder: (context, index) => const SizedBox(
+                height: 8,
+              ),
+              itemCount: items.length,
+            );
+          }),
       bottomNavigationBar: ChatBottomNavigationBar(
         onSend: (message) {
           final ChatItem item = ChatItem(
             message: message,
           );
           AddChatEvent event = AddChatEvent(item: item);
-          bloc.eventSink.add(event);
+          bloc.add(event);
         },
       ),
     );
@@ -191,7 +176,8 @@ class ChatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: item.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment:
+          item.isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
       children: [
         if (item.isMe) ...[
           const SizedBox(
@@ -238,7 +224,8 @@ class ChatBottomNavigationBar extends StatefulWidget {
   });
 
   @override
-  State<ChatBottomNavigationBar> createState() => _ChatBottomNavigationBarState();
+  State<ChatBottomNavigationBar> createState() =>
+      _ChatBottomNavigationBarState();
 }
 
 class _ChatBottomNavigationBarState extends State<ChatBottomNavigationBar> {
