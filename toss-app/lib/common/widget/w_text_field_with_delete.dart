@@ -137,7 +137,7 @@ class TextFieldWithDeleteState extends State<TextFieldWithDelete> {
                 hintStyle: TextStyle(
                     fontSize: widget.fontSize,
                     fontWeight: widget.fontWeight,
-                    color: context.appColors.hintText),
+                    color: context.appColors.hintText,),
                 enabledBorder: const UnderlineInputBorder(
                   borderSide: BorderSide(color: Colors.transparent),
                 ),

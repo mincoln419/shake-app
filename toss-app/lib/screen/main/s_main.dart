@@ -1,10 +1,11 @@
-import 'package:eva_icons_flutter/eva_icons_flutter.dart';
-import 'package:fast_app_base/common/dart/extension/datetime_extension.dart';
-import 'package:fast_app_base/data/memory/vo/vo_todo.dart';
+import 'package:after_layout/after_layout.dart';
+import 'package:fast_app_base/common/cli_common.dart';
 import 'package:fast_app_base/screen/main/tab/tab_item.dart';
 import 'package:fast_app_base/screen/main/tab/tab_navigator.dart';
 import 'package:fast_app_base/screen/main/write/d_write_todo.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 
 import '../../common/common.dart';
 import 'w_menu_drawer.dart';
@@ -16,10 +17,15 @@ class MainScreen extends StatefulWidget {
   State<MainScreen> createState() => MainScreenState();
 }
 
-class MainScreenState extends State<MainScreen>
-    with SingleTickerProviderStateMixin, TodoDataProvider {
-  TabItem _currentTab = TabItem.todo;
-  final tabs = [TabItem.todo, TabItem.search];
+class MainScreenState extends State<MainScreen> with SingleTickerProviderStateMixin, AfterLayoutMixin {
+  TabItem _currentTab = TabItem.home;
+  final tabs = [
+    TabItem.home,
+    TabItem.benefit,
+    TabItem.ttosspay,
+    TabItem.stock,
+    TabItem.all,
+    ];
   final List<GlobalKey<NavigatorState>> navigatorKeys = [];
 
   int get _currentIndex => tabs.indexOf(_currentTab);
@@ -31,6 +37,8 @@ class MainScreenState extends State<MainScreen>
 
   static double get bottomNavigationBarBorderRadius => 30.0;
 
+  static double bottomNavigatorHeight = 50.0;
+
   @override
   void initState() {
     super.initState();
@@ -39,16 +47,16 @@ class MainScreenState extends State<MainScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: _handleBackPressed,
+    return PopScope(
+      canPop: false,
+      onPopInvoked: _handleBackPressed,
       child: Scaffold(
         extendBody: extendBody,
         //bottomNavigationBar 아래 영역 까지 그림
         drawer: const MenuDrawer(),
         body: Container(
-          color: context.appColors.seedColor.getMaterialColorValues[200],
-          padding: EdgeInsets.only(
-              bottom: extendBody ? 60 - bottomNavigationBarBorderRadius : 0),
+          color: Colors.black,
+          padding: EdgeInsets.only(bottom: extendBody ? 60 - bottomNavigationBarBorderRadius : 0),
           child: SafeArea(
             bottom: !extendBody,
             child: pages,
@@ -77,17 +85,25 @@ class MainScreenState extends State<MainScreen>
               ))
           .toList());
 
-  Future<bool> _handleBackPressed() async {
+  void _handleBackPressed(bool didpop) async {
+    if(didpop){
+      return;
+    }
+    final navigator = Navigator.of(context);
     final isFirstRouteInCurrentTab =
-        (await _currentTabNavigationKey.currentState?.maybePop() == false);
+    (await _currentTabNavigationKey.currentState?.maybePop() == false);
+
+    print("isFirstRouteInCurrentTab$_currentTab");
+    print("bool... $isFirstRouteInCurrentTab");
+
     if (isFirstRouteInCurrentTab) {
-      if (_currentTab != TabItem.todo) {
-        _changeTab(tabs.indexOf(TabItem.search));
-        return false;
+      if (_currentTab != TabItem.home) {
+        _changeTab(tabs.indexOf(TabItem.home));
+
+      }else{
+        navigator.pop();
       }
     }
-    // maybePop 가능하면 나가지 않는다.
-    return isFirstRouteInCurrentTab;
   }
 
   Widget _buildBottomNavigationBar(BuildContext context) {
@@ -169,5 +185,12 @@ class MainScreenState extends State<MainScreen>
     for (final _ in tabs) {
       navigatorKeys.add(GlobalKey<NavigatorState>());
     }
+  }
+
+  @override
+  FutureOr<void> afterFirstLayout(BuildContext context) {
+    delay((){
+      FlutterNativeSplash.remove();
+    }, 1500.ms);
   }
 }
