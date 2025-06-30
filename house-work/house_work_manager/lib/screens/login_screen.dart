@@ -48,7 +48,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           '사용자',
           email,
         );
+        print('신규 사용자 생성: ${user.email}, id: ${user.id}');
       }
+    print('기존 사용자 로그인: ${user.email}, id: ${user.id}');
+
 
       // 현재 사용자로 설정
       await ref.read(currentUserProvider.notifier).updateUser(user);

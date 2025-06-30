@@ -22,21 +22,49 @@ class HomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final allTodos = ref.watch(todosProvider);
+    final todayTodosAsync = ref.watch(todayTodosProvider);
     final collaborationMode = ref.watch(collaborationModeProvider);
     final currentUser = ref.watch(currentUserProvider);
-    
-    final today = DateTime.now();
-    final todayTodos = allTodos.where((todo) {
-      final todoDate = DateTime(todo.dueDate.year, todo.dueDate.month, todo.dueDate.day);
-      final todayDate = DateTime(today.year, today.month, today.day);
-      return todoDate.isAtSameMomentAs(todayDate);
-    }).toList();
 
     return Scaffold(
       appBar: AppBar(
         title: const Text(AppStrings.appTitle),
         actions: [
+          // 디버깅 버튼
+          IconButton(
+            icon: const Icon(Icons.bug_report),
+            onPressed: () async {
+              await ref.read(databaseServiceProvider).debugAllTodos();
+              // TodoProvider 강제 새로고침
+              ref.invalidate(todosProvider);
+              ref.invalidate(todayTodosProvider);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('디버깅 정보가 콘솔에 출력되었습니다'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+          // 데이터베이스 초기화 버튼
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () async {
+              await ref.read(databaseServiceProvider).resetDatabase();
+              // 모든 프로바이더 초기화
+              ref.invalidate(todosProvider);
+              ref.invalidate(todayTodosProvider);
+              ref.invalidate(currentUserProvider);
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('데이터베이스가 초기화되었습니다'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
           // 로그아웃 버튼
           IconButton(
             icon: const Icon(Icons.logout),
@@ -46,15 +74,6 @@ class HomeScreen extends ConsumerWidget {
                 context,
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
-            },
-          ),
-          // 테스트용 임시 버튼
-          IconButton(
-            icon: const Icon(Icons.schedule),
-            onPressed: () async {
-              await ref.read(databaseServiceProvider).updateDatesForTesting();
-              // 상태 새로고침
-              ref.invalidate(todosProvider);
             },
           ),
           IconButton(
@@ -77,8 +96,12 @@ class HomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      body: collaborationMode.when(
-        data: (mode) => _buildBody(context, ref, mode, todayTodos),
+      body: todayTodosAsync.when(
+        data: (todayTodos) => collaborationMode.when(
+          data: (mode) => _buildBody(context, ref, mode, todayTodos),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('오류: $error')),
+        ),
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, stack) => Center(child: Text('오류: $error')),
       ),

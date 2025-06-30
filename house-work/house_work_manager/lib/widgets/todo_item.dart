@@ -112,13 +112,35 @@ class TodoItem extends ConsumerWidget {
             ),
           ],
         ),
-        trailing: isCreatedByMe
-            ? const Icon(Icons.person, color: Colors.blue)
-            : const Icon(Icons.people, color: Colors.green),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // 수정 버튼 (작성자만 수정 가능)
+            if (isCreatedByMe)
+              IconButton(
+                icon: const Icon(Icons.edit, color: Colors.blue),
+                onPressed: () => _navigateToEditScreen(context),
+                tooltip: '수정',
+              ),
+            // 작성자/담당자 표시 아이콘
+            isCreatedByMe
+                ? const Icon(Icons.person, color: Colors.blue)
+                : const Icon(Icons.people, color: Colors.green),
+          ],
+        ),
         onTap: null,
         onLongPress: () {
           _showDeleteDialog(context, ref);
         },
+      ),
+    );
+  }
+
+  void _navigateToEditScreen(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditTodoScreen(todo: todo),
       ),
     );
   }

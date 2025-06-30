@@ -2,7 +2,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/todo.dart';
 import '../models/history.dart';
 import '../models/category.dart';
-import 'database_service.dart';
+import '../models/collaboration_mode.dart';
+import '../models/connection.dart';
+import '../services/database_service.dart';
+import '../services/user_provider.dart';
 
 final databaseServiceProvider = Provider<DatabaseService>((ref) {
   return DatabaseService();
@@ -15,7 +18,46 @@ final todosProvider = StateNotifierProvider<TodoNotifier, List<Todo>>((ref) {
 
 final todayTodosProvider = FutureProvider<List<Todo>>((ref) async {
   final databaseService = ref.watch(databaseServiceProvider);
-  return await databaseService.getTodosByDate(DateTime.now());
+  final currentUser = ref.watch(currentUserProvider);
+  final userId = currentUser?.id;
+  
+  if (userId == null) {
+    return [];
+  }
+  
+  // 협업 모드 확인
+  final collaborationMode = ref.watch(collaborationModeProvider);
+  
+  return collaborationMode.when(
+    data: (mode) async {
+      if (mode == CollaborationMode.connected) {
+        // 협업 모드: 연결된 사용자들의 할일 가져오기
+        final connection = await ref.read(activeConnectionProvider.future);
+        if (connection != null) {
+          final partnerId = connection.user1Id == userId ? connection.user2Id : connection.user1Id;
+          return await databaseService.getCollaborativeTodosByDate(
+            DateTime.now(), 
+            userId: userId, 
+            partnerId: partnerId
+          );
+        } else {
+          // 연결 정보가 없으면 개인 데이터만
+          return await databaseService.getTodosByDate(DateTime.now(), userId: userId);
+        }
+      } else {
+        // 개인 모드 또는 pending 모드: 개인 데이터만
+        return await databaseService.getTodosByDate(DateTime.now(), userId: userId);
+      }
+    },
+    loading: () async {
+      // 로딩 중: 개인 데이터만
+      return await databaseService.getTodosByDate(DateTime.now(), userId: userId);
+    },
+    error: (error, stack) async {
+      // 오류 발생: 개인 데이터만
+      return await databaseService.getTodosByDate(DateTime.now(), userId: userId);
+    },
+  );
 });
 
 final historyProvider = StateNotifierProvider<HistoryNotifier, List<History>>((ref) {
@@ -37,27 +79,91 @@ class TodoNotifier extends StateNotifier<List<Todo>> {
   }
 
   Future<void> _loadTodos() async {
-    final todos = await _databaseService.getAllTodos();
-    state = todos;
+    final currentUser = _ref.read(currentUserProvider);
+    final userId = currentUser?.id;
+    
+    print('=== _loadTodos 호출 ===');
+    print('현재 사용자: ${currentUser?.email}');
+    print('현재 사용자 ID: $userId');
+    print('currentUser 객체: $currentUser');
+    
+    if (userId == null) {
+      print('사용자 ID가 null이므로 빈 리스트 반환');
+      state = [];
+      return;
+    }
+    
+    // 협업 모드 확인
+    final collaborationMode = _ref.read(collaborationModeProvider);
+    
+    collaborationMode.when(
+      data: (mode) async {
+        print('협업 모드: $mode');
+        if (mode == CollaborationMode.connected) {
+          // 협업 모드: 연결된 사용자들의 할일 가져오기
+          final connection = await _ref.read(activeConnectionProvider.future);
+          if (connection != null) {
+            final partnerId = connection.user1Id == userId ? connection.user2Id : connection.user1Id;
+            print('협업 모드 - 파트너 ID: $partnerId');
+            final todos = await _databaseService.getCollaborativeTodos(userId: userId, partnerId: partnerId);
+            print('협업 모드 - 로드된 할일 개수: ${todos.length}');
+            state = todos;
+          } else {
+            // 연결 정보가 없으면 개인 데이터만
+            print('협업 모드이지만 연결 정보가 없음 - 개인 데이터만 로드');
+            final todos = await _databaseService.getAllTodos(userId: userId);
+            print('개인 데이터 - 로드된 할일 개수: ${todos.length}');
+            state = todos;
+          }
+        } else {
+          // 개인 모드 또는 pending 모드: 개인 데이터만
+          print('개인 모드 - 개인 데이터만 로드');
+          print('전달할 userId: $userId');
+          final todos = await _databaseService.getAllTodos(userId: userId);
+          print('개인 데이터 - 로드된 할일 개수: ${todos.length}');
+          state = todos;
+        }
+      },
+      loading: () async {
+        // 로딩 중: 개인 데이터만
+        print('협업 모드 로딩 중 - 개인 데이터만 로드');
+        final todos = await _databaseService.getAllTodos(userId: userId);
+        print('개인 데이터 - 로드된 할일 개수: ${todos.length}');
+        state = todos;
+      },
+      error: (error, stack) async {
+        // 오류 발생: 개인 데이터만
+        print('협업 모드 오류 - 개인 데이터만 로드');
+        final todos = await _databaseService.getAllTodos(userId: userId);
+        print('개인 데이터 - 로드된 할일 개수: ${todos.length}');
+        state = todos;
+      },
+    );
   }
 
   Future<void> addTodo(Todo todo) async {
-    print('TodoNotifier.addTodo 호출됨: ${todo.title}');
     final id = await _databaseService.insertTodo(todo);
-    print('DB insert 완료, ID: $id');
     final newTodo = todo.copyWith(id: id);
     state = [...state, newTodo];
-    print('State 업데이트 완료, 현재 할일 개수: ${state.length}');
+    // 상태 갱신
+    _ref.invalidate(todayTodosProvider);
+    _ref.invalidate(todosProvider);
   }
 
   Future<void> updateTodo(Todo todo) async {
     await _databaseService.updateTodo(todo);
     state = state.map((t) => t.id == todo.id ? todo : t).toList();
+    // 상태 갱신
+    _ref.invalidate(todayTodosProvider);
+    _ref.invalidate(todosProvider);
   }
 
   Future<void> deleteTodo(int id) async {
     await _databaseService.deleteTodo(id);
     state = state.where((todo) => todo.id != id).toList();
+    // 상태 갱신
+    _ref.invalidate(todayTodosProvider);
+    _ref.invalidate(todosProvider);
   }
 
   Future<void> toggleTodoCompletion(Todo todo) async {
@@ -71,39 +177,26 @@ class TodoNotifier extends StateNotifier<List<Todo>> {
       
       // 완료된 경우에만 히스토리에 추가 (중복 방지)
       if (updatedTodo.isCompleted && updatedTodo.completedAt != null) {
-        print('할일 완료됨: ${updatedTodo.title}');
+        final history = History(
+          todoId: updatedTodo.id!,
+          title: updatedTodo.title,
+          category: updatedTodo.category,
+          completedAt: updatedTodo.completedAt!,
+          completionTime: updatedTodo.completedAt!
+              .difference(updatedTodo.createdAt)
+              .inMinutes,
+        );
         
-        // 이미 히스토리에 있는지 확인 (더 정확한 중복 체크)
-        final existingHistory = _ref.read(historyProvider).where(
-          (h) => h.todoId == updatedTodo.id && 
-                 h.completedAt.year == updatedTodo.completedAt!.year &&
-                 h.completedAt.month == updatedTodo.completedAt!.month &&
-                 h.completedAt.day == updatedTodo.completedAt!.day
-        ).toList();
-        
-        if (existingHistory.isEmpty) {
-          print('새 이력 추가: ${updatedTodo.title}');
-          final history = History(
-            todoId: updatedTodo.id!,
-            title: updatedTodo.title,
-            category: updatedTodo.category,
-            completedAt: updatedTodo.completedAt!,
-            completionTime: updatedTodo.completedAt!
-                .difference(updatedTodo.createdAt)
-                .inMinutes,
-          );
-          
-          // HistoryNotifier를 통해 히스토리 추가
-          await _ref.read(historyProvider.notifier).addHistory(history);
-          print('이력 추가 완료: ${history.title}');
-        } else {
-          print('이미 존재하는 이력: ${updatedTodo.title}');
-        }
+        // HistoryNotifier를 통해 히스토리 추가
+        await _ref.read(historyProvider.notifier).addHistory(history);
       }
       
       state = state.map((t) => t.id == todo.id ? updatedTodo : t).toList();
+      
+      // todayTodosProvider를 invalidate하여 UI 갱신
+      _ref.invalidate(todayTodosProvider);
+      _ref.invalidate(todosProvider);
     } catch (e) {
-      print('할일 상태 변경 중 오류 발생: $e');
       rethrow; // 에러를 다시 던져서 UI에서 처리할 수 있도록 함
     }
   }

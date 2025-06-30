@@ -12,6 +12,8 @@ class Todo {
   final RepeatType repeatType;
   final DateTime createdAt;
   final DateTime? completedAt;
+  final int? assignedTo;
+  final int? createdBy;
 
   Todo({
     this.id,
@@ -25,6 +27,8 @@ class Todo {
     this.repeatType = RepeatType.none,
     required this.createdAt,
     this.completedAt,
+    this.assignedTo,
+    this.createdBy,
   });
 
   Todo copyWith({
@@ -39,6 +43,8 @@ class Todo {
     RepeatType? repeatType,
     DateTime? createdAt,
     DateTime? completedAt,
+    int? assignedTo,
+    int? createdBy,
   }) {
     return Todo(
       id: id ?? this.id,
@@ -52,6 +58,8 @@ class Todo {
       repeatType: repeatType ?? this.repeatType,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
+      assignedTo: assignedTo ?? this.assignedTo,
+      createdBy: createdBy ?? this.createdBy,
     );
   }
 
@@ -68,24 +76,36 @@ class Todo {
       'repeatType': repeatType.index,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'completedAt': completedAt?.millisecondsSinceEpoch,
+      'assignedTo': assignedTo,
+      'createdBy': createdBy,
     };
   }
 
   factory Todo.fromMap(Map<String, dynamic> map) {
     return Todo(
       id: map['id'],
-      title: map['title'],
-      description: map['description'],
-      category: map['category'],
-      dueDate: DateTime.fromMillisecondsSinceEpoch(map['dueDate']),
-      priority: Priority.values[map['priority']],
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      category: map['category'] ?? '',
+      dueDate: map['dueDate'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(map['dueDate'])
+          : DateTime.now(),
+      priority: map['priority'] != null 
+          ? Priority.values[map['priority']]
+          : Priority.medium,
       isCompleted: map['isCompleted'] == 1,
       isRepeating: map['isRepeating'] == 1,
-      repeatType: RepeatType.values[map['repeatType']],
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt']),
+      repeatType: map['repeatType'] != null 
+          ? RepeatType.values[map['repeatType']]
+          : RepeatType.none,
+      createdAt: map['createdAt'] != null 
+          ? DateTime.fromMillisecondsSinceEpoch(map['createdAt'])
+          : DateTime.now(),
       completedAt: map['completedAt'] != null
           ? DateTime.fromMillisecondsSinceEpoch(map['completedAt'])
           : null,
+      assignedTo: map['assignedTo'],
+      createdBy: map['createdBy'],
     );
   }
 

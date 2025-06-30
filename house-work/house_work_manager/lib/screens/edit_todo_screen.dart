@@ -2,14 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/todo.dart';
+import '../models/category.dart';
 import '../services/todo_provider.dart';
+import '../services/user_provider.dart';
+import '../models/collaboration_mode.dart';
+import '../models/connection.dart';
+import '../models/user.dart';
 import '../utils/constants.dart';
 import '../widgets/add_category_dialog.dart';
 
 class EditTodoScreen extends ConsumerStatefulWidget {
   final Todo todo;
 
-  const EditTodoScreen({super.key, required this.todo});
+  const EditTodoScreen({
+    super.key,
+    required this.todo,
+  });
 
   @override
   ConsumerState<EditTodoScreen> createState() => _EditTodoScreenState();
@@ -18,24 +26,24 @@ class EditTodoScreen extends ConsumerStatefulWidget {
 class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
-  late DateTime _selectedDate;
-  late TimeOfDay _selectedTime;
   late String _selectedCategory;
+  late DateTime _selectedDate;
   late Priority _selectedPriority;
   late bool _isRepeating;
   late RepeatType _repeatType;
+  late int? _assignedTo;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.todo.title);
     _descriptionController = TextEditingController(text: widget.todo.description);
-    _selectedDate = widget.todo.dueDate;
-    _selectedTime = TimeOfDay.fromDateTime(widget.todo.dueDate);
     _selectedCategory = widget.todo.category;
+    _selectedDate = widget.todo.dueDate;
     _selectedPriority = widget.todo.priority;
     _isRepeating = widget.todo.isRepeating;
     _repeatType = widget.todo.repeatType;
+    _assignedTo = widget.todo.assignedTo;
   }
 
   @override
@@ -47,23 +55,11 @@ class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final categories = ref.watch(categoriesProvider);
-    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('할일 편집'),
-        actions: [
-          TextButton(
-            onPressed: _saveTodo,
-            child: const Text(
-              '저장',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
+        title: const Text('할일 수정'),
+        backgroundColor: const Color(AppColors.primary),
+        foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -71,91 +67,59 @@ class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // 제목 입력
-            TextFormField(
+            TextField(
               controller: _titleController,
               decoration: const InputDecoration(
                 labelText: '할일 제목',
                 border: OutlineInputBorder(),
               ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '제목을 입력해주세요';
-                }
-                return null;
-              },
             ),
             const SizedBox(height: 16),
 
             // 설명 입력
-            TextFormField(
+            TextField(
               controller: _descriptionController,
+              maxLines: 3,
               decoration: const InputDecoration(
                 labelText: '설명 (선택사항)',
                 border: OutlineInputBorder(),
               ),
-              maxLines: 3,
             ),
             const SizedBox(height: 16),
 
             // 카테고리 선택
             DropdownButtonFormField<String>(
-              value: _selectedCategory.isNotEmpty ? _selectedCategory : null,
+              value: _selectedCategory,
               decoration: const InputDecoration(
                 labelText: '카테고리',
                 border: OutlineInputBorder(),
               ),
               items: [
-                ...categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category.name,
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 16,
-                          height: 16,
-                          decoration: BoxDecoration(
-                            color: _parseColor(category.color),
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(category.name),
-                      ],
-                    ),
-                  );
-                }).toList(),
-                const DropdownMenuItem(
-                  value: 'add_new',
-                  child: Row(
-                    children: [
-                      Icon(Icons.add, size: 16),
-                      SizedBox(width: 8),
-                      Text('새 카테고리 추가'),
-                    ],
-                  ),
-                ),
+                DropdownMenuItem(value: '요리', child: Text('요리')),
+                DropdownMenuItem(value: '청소', child: Text('청소')),
+                DropdownMenuItem(value: '빨래', child: Text('빨래')),
+                DropdownMenuItem(value: '쇼핑', child: Text('쇼핑')),
               ],
-              onChanged: (value) async {
-                if (value == 'add_new') {
-                  final result = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => const AddCategoryDialog(),
-                  );
-                  if (result == true) {
-                    // 카테고리가 추가되면 상태가 자동으로 업데이트됩니다
-                    final updatedCategories = ref.read(categoriesProvider);
-                    if (updatedCategories.isNotEmpty) {
-                      setState(() {
-                        _selectedCategory = updatedCategories.last.name;
-                      });
-                    }
-                  }
-                } else if (value != null) {
-                  setState(() {
-                    _selectedCategory = value;
-                  });
-                }
+              onChanged: (value) {
+                setState(() {
+                  _selectedCategory = value!;
+                });
               },
+            ),
+            const SizedBox(height: 16),
+
+            // 날짜 선택
+            InkWell(
+              onTap: () => _selectDate(context),
+              child: InputDecorator(
+                decoration: const InputDecoration(
+                  labelText: '마감일',
+                  border: OutlineInputBorder(),
+                ),
+                child: Text(
+                  DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
+                ),
+              ),
             ),
             const SizedBox(height: 16),
 
@@ -180,46 +144,24 @@ class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
             ),
             const SizedBox(height: 16),
 
-            // 날짜 선택
-            ListTile(
-              title: const Text('마감 날짜'),
-              subtitle: Text(
-                DateFormat('yyyy년 MM월 dd일').format(_selectedDate),
-              ),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: _selectDate,
-            ),
-            const SizedBox(height: 8),
-
-            // 시간 선택
-            ListTile(
-              title: const Text('마감 시간'),
-              subtitle: Text(_selectedTime.format(context)),
-              trailing: const Icon(Icons.access_time),
-              onTap: _selectTime,
-            ),
-            const SizedBox(height: 16),
-
             // 반복 설정
-            SwitchListTile(
+            CheckboxListTile(
               title: const Text('반복'),
-              subtitle: const Text('할일을 반복적으로 설정'),
               value: _isRepeating,
               onChanged: (value) {
                 setState(() {
-                  _isRepeating = value;
+                  _isRepeating = value!;
                 });
               },
             ),
             if (_isRepeating) ...[
-              const SizedBox(height: 16),
               DropdownButtonFormField<RepeatType>(
-                value: _repeatType == RepeatType.none ? RepeatType.daily : _repeatType,
+                value: _repeatType,
                 decoration: const InputDecoration(
                   labelText: '반복 주기',
                   border: OutlineInputBorder(),
                 ),
-                items: RepeatType.values.where((type) => type != RepeatType.none).map((type) {
+                items: RepeatType.values.map((type) {
                   return DropdownMenuItem(
                     value: type,
                     child: Text(_getRepeatTypeText(type)),
@@ -231,26 +173,136 @@ class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
                   });
                 },
               ),
+              const SizedBox(height: 16),
             ],
+
+            // 협업 모드에서 담당자 선택
+            Consumer(
+              builder: (context, ref, child) {
+                final collaborationMode = ref.watch(collaborationModeProvider);
+                
+                return collaborationMode.when(
+                  data: (mode) {
+                    if (mode == CollaborationMode.connected) {
+                      return _buildAssigneeSelection();
+                    }
+                    return const SizedBox.shrink();
+                  },
+                  loading: () => const SizedBox.shrink(),
+                  error: (error, stack) => const SizedBox.shrink(),
+                );
+              },
+            ),
+
+            const SizedBox(height: 32),
+
+            // 수정 버튼
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _updateTodo,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(AppColors.primary),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: const Text(
+                  '수정하기',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Color _parseColor(String hexColor) {
-    hexColor = hexColor.replaceAll('#', '');
-    return Color(int.parse('FF${hexColor}', radix: 16));
+  Widget _buildAssigneeSelection() {
+    return Consumer(
+      builder: (context, ref, child) {
+        final currentUser = ref.read(currentUserProvider);
+        
+        return ref.watch(activeConnectionProvider).when(
+          data: (connection) {
+            if (connection == null) return const SizedBox.shrink();
+            
+            final partnerId = connection.user1Id == currentUser?.id 
+                ? connection.user2Id 
+                : connection.user1Id;
+            
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '담당자',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: RadioListTile<int>(
+                        title: const Text('나'),
+                        value: currentUser?.id ?? 1,
+                        groupValue: _assignedTo,
+                        onChanged: (value) {
+                          setState(() {
+                            _assignedTo = value;
+                          });
+                        },
+                      ),
+                    ),
+                    Expanded(
+                      child: RadioListTile<int>(
+                        title: const Text('상대방'),
+                        value: partnerId,
+                        groupValue: _assignedTo,
+                        onChanged: (value) {
+                          setState(() {
+                            _assignedTo = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            );
+          },
+          loading: () => const SizedBox.shrink(),
+          error: (error, stack) => const SizedBox.shrink(),
+        );
+      },
+    );
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+    if (picked != null && picked != _selectedDate) {
+      setState(() {
+        _selectedDate = picked;
+      });
+    }
   }
 
   String _getPriorityText(Priority priority) {
     switch (priority) {
       case Priority.low:
-        return AppStrings.priorityLow;
+        return '낮음';
       case Priority.medium:
-        return AppStrings.priorityMedium;
+        return '보통';
       case Priority.high:
-        return AppStrings.priorityHigh;
+        return '높음';
     }
   }
 
@@ -267,76 +319,48 @@ class _EditTodoScreenState extends ConsumerState<EditTodoScreen> {
     }
   }
 
-  Future<void> _selectDate() async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedDate = DateTime(
-          picked.year,
-          picked.month,
-          picked.day,
-          _selectedTime.hour,
-          _selectedTime.minute,
-        );
-      });
-    }
-  }
-
-  Future<void> _selectTime() async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: _selectedTime,
-    );
-    if (picked != null) {
-      setState(() {
-        _selectedTime = picked;
-        _selectedDate = DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
-    }
-  }
-
-  void _saveTodo() {
-    if (_titleController.text.isEmpty) {
+  void _updateTodo() async {
+    if (_titleController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('제목을 입력해주세요')),
+        const SnackBar(content: Text('할일 제목을 입력해주세요')),
       );
       return;
     }
 
-    if (_selectedCategory.isEmpty) {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('카테고리를 선택해주세요')),
+        const SnackBar(content: Text('사용자 정보를 찾을 수 없습니다')),
       );
       return;
     }
 
     final updatedTodo = widget.todo.copyWith(
-      title: _titleController.text,
-      description: _descriptionController.text,
+      title: _titleController.text.trim(),
+      description: _descriptionController.text.trim(),
       category: _selectedCategory,
-      priority: _selectedPriority,
       dueDate: _selectedDate,
+      priority: _selectedPriority,
       isRepeating: _isRepeating,
       repeatType: _repeatType,
+      assignedTo: _assignedTo,
     );
 
-    ref.read(todosProvider.notifier).updateTodo(updatedTodo);
-    
-    Navigator.pop(context, true);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('할일이 수정되었습니다')),
-    );
+    try {
+      await ref.read(todosProvider.notifier).updateTodo(updatedTodo);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('할일이 수정되었습니다')),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('할일 수정 중 오류가 발생했습니다: $e')),
+        );
+      }
+    }
   }
 } 

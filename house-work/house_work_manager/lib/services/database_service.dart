@@ -23,14 +23,6 @@ class DatabaseService {
   Future<Database> _initDatabase() async {
     String path = join(await getDatabasesPath(), 'house_work_manager.db');
     
-    // 기존 데이터베이스 파일 삭제 (개발 중에만 사용)
-    try {
-      await deleteDatabase(path);
-      print('기존 데이터베이스 파일을 삭제했습니다.');
-    } catch (e) {
-      print('데이터베이스 파일 삭제 중 오류: $e');
-    }
-    
     return await openDatabase(
       path,
       version: 3,
@@ -72,16 +64,16 @@ class DatabaseService {
         description TEXT,
         category TEXT NOT NULL,
         priority TEXT DEFAULT 'normal',
-        due_date DATETIME NOT NULL,
-        is_completed BOOLEAN DEFAULT 0,
-        is_repeating BOOLEAN DEFAULT 0,
-        repeat_type TEXT DEFAULT 'none',
-        created_by INTEGER NOT NULL,
-        assigned_to INTEGER,
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        completed_at DATETIME,
-        FOREIGN KEY (created_by) REFERENCES users (id),
-        FOREIGN KEY (assigned_to) REFERENCES users (id)
+        dueDate DATETIME NOT NULL,
+        isCompleted BOOLEAN DEFAULT 0,
+        isRepeating BOOLEAN DEFAULT 0,
+        repeatType TEXT DEFAULT 'none',
+        createdBy INTEGER NOT NULL,
+        assignedTo INTEGER,
+        createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
+        completedAt DATETIME,
+        FOREIGN KEY (createdBy) REFERENCES users (id),
+        FOREIGN KEY (assignedTo) REFERENCES users (id)
       )
     ''');
 
@@ -120,8 +112,32 @@ class DatabaseService {
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 3) {
-      // 모든 테이블을 다시 생성
-      await _onCreate(db, newVersion);
+      // 기존 데이터를 보존하면서 업그레이드
+      try {
+        // 기존 테이블이 있는지 확인
+        final tables = await db.query('sqlite_master', where: 'type = ?', whereArgs: ['table']);
+        final tableNames = tables.map((t) => t['name'] as String).toList();
+        
+        if (tableNames.contains('todos')) {
+          // 기존 데이터는 그대로 두고, 필요한 컬럼만 추가
+          try {
+            await db.execute('ALTER TABLE todos ADD COLUMN createdBy INTEGER DEFAULT 1');
+          } catch (e) {
+            // createdBy 컬럼이 이미 존재함
+          }
+          
+          try {
+            await db.execute('ALTER TABLE todos ADD COLUMN assignedTo INTEGER DEFAULT 1');
+          } catch (e) {
+            // assignedTo 컬럼이 이미 존재함
+          }
+        } else {
+          await _onCreate(db, newVersion);
+        }
+      } catch (e) {
+        // 오류 발생 시 안전하게 새로 생성
+        await _onCreate(db, newVersion);
+      }
     }
   }
 
@@ -148,33 +164,168 @@ class DatabaseService {
     return await db.insert('todos', todo.toMap());
   }
 
-  Future<List<Todo>> getAllTodos() async {
+  Future<List<Todo>> getAllTodos({int? userId}) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('todos');
+    
+    print('=== getAllTodos 호출 ===');
+    print('요청한 userId: $userId');
+    
+    final List<Map<String, dynamic>> maps = userId != null
+        ? await db.query(
+            'todos',
+            where: 'createdBy = ?',  // createdBy만으로 필터링
+            whereArgs: [userId],
+          )
+        : await db.query('todos');
+    
+    print('조회된 할일 개수: ${maps.length}');
+    print('=== DB에서 조회한 원본 데이터 ===');
+    for (var map in maps) {
+      print('할일: ${map['title']}, createdBy: ${map['createdBy']}, assignedTo: ${map['assignedTo']}');
+    }
+    
     return List.generate(maps.length, (i) {
-      final map = maps[i];
-      // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
-      if (map['created_by'] == null) {
-        map['created_by'] = 1; // 기본 사용자 ID
+      final map = Map<String, dynamic>.from(maps[i]);
+      
+      // 데이터 타입 변환 처리 - 더 안전하게
+      try {
+        if (map['createdAt'] is String) {
+          map['createdAt'] = DateTime.parse(map['createdAt']).millisecondsSinceEpoch;
+        } else if (map['createdAt'] == null) {
+          map['createdAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['dueDate'] is String) {
+          map['dueDate'] = DateTime.parse(map['dueDate']).millisecondsSinceEpoch;
+        } else if (map['dueDate'] == null) {
+          map['dueDate'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['completedAt'] is String) {
+          map['completedAt'] = DateTime.parse(map['completedAt']).millisecondsSinceEpoch;
+        } else if (map['completedAt'] == null) {
+          map['completedAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        // 숫자 필드들 처리
+        if (map['priority'] is String) {
+          map['priority'] = int.tryParse(map['priority']) ?? 1;
+        }
+        if (map['repeatType'] is String) {
+          map['repeatType'] = int.tryParse(map['repeatType']) ?? 0;
+        }
+        if (map['isCompleted'] is String) {
+          map['isCompleted'] = int.tryParse(map['isCompleted']) ?? 0;
+        }
+        if (map['isRepeating'] is String) {
+          map['isRepeating'] = int.tryParse(map['isRepeating']) ?? 0;
+        }
+        
+        // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
+        bool wasMigrated = false;
+        if (map['createdBy'] == null) {
+          map['createdBy'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+          wasMigrated = true;
+        }
+        if (map['assignedTo'] == null) {
+          map['assignedTo'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+          wasMigrated = true;
+        }
+        
+        if (wasMigrated) {
+          print('마이그레이션 적용됨: ${map['title']} -> createdBy: ${map['createdBy']}, assignedTo: ${map['assignedTo']}');
+        }
+        
+        return Todo.fromMap(map);
+      } catch (e) {
+        rethrow;
       }
-      if (map['assigned_to'] == null) {
-        map['assigned_to'] = 1; // 기본 사용자 ID
-      }
-      return Todo.fromMap(map);
     });
   }
 
-  Future<List<Todo>> getTodosByDate(DateTime date) async {
+  Future<List<Todo>> getTodosByDate(DateTime date, {int? userId}) async {
     final db = await database;
     final startOfDay = DateTime(date.year, date.month, date.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
     
-    final List<Map<String, dynamic>> maps = await db.query(
-      'todos',
-      where: 'dueDate >= ? AND dueDate < ?',
-      whereArgs: [startOfDay.millisecondsSinceEpoch, endOfDay.millisecondsSinceEpoch],
-    );
-    return List.generate(maps.length, (i) => Todo.fromMap(maps[i]));
+    String whereClause = '''
+      ((dueDate >= ? AND dueDate < ?) 
+         OR (createdAt >= ? AND createdAt < ?) 
+         OR (completedAt IS NOT NULL AND completedAt >= ? AND completedAt < ?))
+    ''';
+    
+    List<dynamic> whereArgs = [
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+    ];
+    
+    // 사용자 필터링 추가
+    if (userId != null) {
+      whereClause += ' AND createdBy = ?';  // createdBy만으로 필터링
+      whereArgs.add(userId);
+    }
+    
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT id, title, description, category, priority, isCompleted, isRepeating, repeatType, createdAt, dueDate, completedAt, createdBy, assignedTo
+      FROM todos 
+      WHERE $whereClause
+      ORDER BY createdAt DESC
+    ''', whereArgs);
+    
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      
+      // 데이터 타입 변환 처리 - 더 안전하게
+      try {
+        if (map['createdAt'] is String) {
+          map['createdAt'] = DateTime.parse(map['createdAt']).millisecondsSinceEpoch;
+        } else if (map['createdAt'] == null) {
+          map['createdAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['dueDate'] is String) {
+          map['dueDate'] = DateTime.parse(map['dueDate']).millisecondsSinceEpoch;
+        } else if (map['dueDate'] == null) {
+          map['dueDate'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['completedAt'] is String) {
+          map['completedAt'] = DateTime.parse(map['completedAt']).millisecondsSinceEpoch;
+        } else if (map['completedAt'] == null) {
+          map['completedAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        // 숫자 필드들 처리
+        if (map['priority'] is String) {
+          map['priority'] = int.tryParse(map['priority']) ?? 1;
+        }
+        if (map['repeatType'] is String) {
+          map['repeatType'] = int.tryParse(map['repeatType']) ?? 0;
+        }
+        if (map['isCompleted'] is String) {
+          map['isCompleted'] = int.tryParse(map['isCompleted']) ?? 0;
+        }
+        if (map['isRepeating'] is String) {
+          map['isRepeating'] = int.tryParse(map['isRepeating']) ?? 0;
+        }
+        
+        // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
+        if (map['createdBy'] == null) {
+          map['createdBy'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+        }
+        if (map['assignedTo'] == null) {
+          map['assignedTo'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+        }
+        
+        return Todo.fromMap(map);
+      } catch (e) {
+        rethrow;
+      }
+    });
   }
 
   Future<int> updateTodo(Todo todo) async {
@@ -321,17 +472,83 @@ class DatabaseService {
     return total > 0 ? ((completed / total) * 100).round() : 0;
   }
 
-  Future<List<Todo>> getRecentCompletedTodos({int limit = 5}) async {
+  Future<List<Todo>> getRecentCompletedTodos({int limit = 5, int? userId}) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.rawQuery('''
-      SELECT title, description, category, priority, is_completed, is_repeating, repeat_type, created_at, due_date, completed_at, created_by, assigned_to
-      FROM todos 
-      WHERE is_completed = 1 AND is_repeating = 0
-      GROUP BY title
-      ORDER BY MAX(completed_at) DESC
-      LIMIT ?
-    ''', [limit]);
-    return List.generate(maps.length, (i) => Todo.fromMap(maps[i]));
+    
+    try {
+      String whereClause = 'isCompleted = 1 AND completedAt IS NOT NULL';
+      List<dynamic> whereArgs = [];
+      
+      // 사용자 필터링 추가
+      if (userId != null) {
+        whereClause += ' AND createdBy = ?';  // createdBy만으로 필터링
+        whereArgs.add(userId);
+      }
+      
+      whereArgs.add(limit);
+      
+      // 완료된 할일 중 최근 것들을 가져오는 쿼리 (GROUP BY 제거)
+      final List<Map<String, dynamic>> maps = await db.rawQuery('''
+        SELECT id, title, description, category, priority, isCompleted, isRepeating, repeatType, createdAt, dueDate, completedAt, createdBy, assignedTo
+        FROM todos 
+        WHERE $whereClause
+        ORDER BY completedAt DESC
+        LIMIT ?
+      ''', whereArgs);
+      
+      return List.generate(maps.length, (i) {
+        final map = Map<String, dynamic>.from(maps[i]);
+        
+        // 데이터 타입 변환 처리 - 더 안전하게
+        try {
+          if (map['createdAt'] is String) {
+            map['createdAt'] = DateTime.parse(map['createdAt']).millisecondsSinceEpoch;
+          } else if (map['createdAt'] == null) {
+            map['createdAt'] = DateTime.now().millisecondsSinceEpoch;
+          }
+          
+          if (map['dueDate'] is String) {
+            map['dueDate'] = DateTime.parse(map['dueDate']).millisecondsSinceEpoch;
+          } else if (map['dueDate'] == null) {
+            map['dueDate'] = DateTime.now().millisecondsSinceEpoch;
+          }
+          
+          if (map['completedAt'] is String) {
+            map['completedAt'] = DateTime.parse(map['completedAt']).millisecondsSinceEpoch;
+          } else if (map['completedAt'] == null) {
+            map['completedAt'] = DateTime.now().millisecondsSinceEpoch;
+          }
+          
+          // 숫자 필드들 처리
+          if (map['priority'] is String) {
+            map['priority'] = int.tryParse(map['priority']) ?? 1;
+          }
+          if (map['repeatType'] is String) {
+            map['repeatType'] = int.tryParse(map['repeatType']) ?? 0;
+          }
+          if (map['isCompleted'] is String) {
+            map['isCompleted'] = int.tryParse(map['isCompleted']) ?? 0;
+          }
+          if (map['isRepeating'] is String) {
+            map['isRepeating'] = int.tryParse(map['isRepeating']) ?? 0;
+          }
+          
+          // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
+          if (map['createdBy'] == null) {
+            map['createdBy'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+          }
+          if (map['assignedTo'] == null) {
+            map['assignedTo'] = userId ?? 1; // 현재 사용자 ID 또는 기본값
+          }
+          
+          return Todo.fromMap(map);
+        } catch (e) {
+          rethrow;
+        }
+      });
+    } catch (e) {
+      return [];
+    }
   }
 
   // 테스트용 임시 메서드 - 기존 데이터들의 날짜를 어제로 변경
@@ -348,8 +565,6 @@ class DatabaseService {
       },
       where: '1=1', // 모든 레코드 업데이트
     );
-    
-    print('모든 할일의 날짜가 어제(${yesterday.toString()})로 변경되었습니다.');
   }
 
   // 사용자 관리 메서드들
@@ -473,5 +688,232 @@ class DatabaseService {
     }
     
     return CollaborationMode.personal;
+  }
+
+  // 테스트용 완료된 할일 추가
+  Future<void> addTestCompletedTodo() async {
+    final db = await database;
+    final now = DateTime.now();
+    final yesterday = now.subtract(const Duration(days: 1));
+    
+    await db.insert('todos', {
+      'title': '테스트 완료된 할일',
+      'description': '테스트용 완료된 할일입니다',
+      'category': '청소',
+      'dueDate': yesterday.millisecondsSinceEpoch,
+      'priority': 1,
+      'isCompleted': 1,
+      'isRepeating': 0,
+      'repeatType': 0,
+      'createdAt': yesterday.millisecondsSinceEpoch,
+      'completedAt': now.millisecondsSinceEpoch,
+      'createdBy': 1,
+      'assignedTo': 1,
+    });
+  }
+
+  Future<List<Todo>> getCollaborativeTodos({required int userId, required int partnerId}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'todos',
+      where: '(createdBy = ? OR createdBy = ? OR assignedTo = ? OR assignedTo = ?)',
+      whereArgs: [userId, partnerId, userId, partnerId],
+    );
+    
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      
+      // 데이터 타입 변환 처리 - 더 안전하게
+      try {
+        if (map['createdAt'] is String) {
+          map['createdAt'] = DateTime.parse(map['createdAt']).millisecondsSinceEpoch;
+        } else if (map['createdAt'] == null) {
+          map['createdAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['dueDate'] is String) {
+          map['dueDate'] = DateTime.parse(map['dueDate']).millisecondsSinceEpoch;
+        } else if (map['dueDate'] == null) {
+          map['dueDate'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['completedAt'] is String) {
+          map['completedAt'] = DateTime.parse(map['completedAt']).millisecondsSinceEpoch;
+        } else if (map['completedAt'] == null) {
+          map['completedAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        // 숫자 필드들 처리
+        if (map['priority'] is String) {
+          map['priority'] = int.tryParse(map['priority']) ?? 1;
+        }
+        if (map['repeatType'] is String) {
+          map['repeatType'] = int.tryParse(map['repeatType']) ?? 0;
+        }
+        if (map['isCompleted'] is String) {
+          map['isCompleted'] = int.tryParse(map['isCompleted']) ?? 0;
+        }
+        if (map['isRepeating'] is String) {
+          map['isRepeating'] = int.tryParse(map['isRepeating']) ?? 0;
+        }
+        
+        // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
+        if (map['createdBy'] == null) {
+          map['createdBy'] = userId; // 현재 사용자 ID
+        }
+        if (map['assignedTo'] == null) {
+          map['assignedTo'] = userId; // 현재 사용자 ID
+        }
+        
+        return Todo.fromMap(map);
+      } catch (e) {
+        rethrow;
+      }
+    });
+  }
+
+  Future<List<Todo>> getCollaborativeTodosByDate(DateTime date, {required int userId, required int partnerId}) async {
+    final db = await database;
+    final startOfDay = DateTime(date.year, date.month, date.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+    
+    final List<Map<String, dynamic>> maps = await db.rawQuery('''
+      SELECT id, title, description, category, priority, isCompleted, isRepeating, repeatType, createdAt, dueDate, completedAt, createdBy, assignedTo
+      FROM todos 
+      WHERE ((dueDate >= ? AND dueDate < ?) 
+         OR (createdAt >= ? AND createdAt < ?) 
+         OR (completedAt IS NOT NULL AND completedAt >= ? AND completedAt < ?))
+         AND (createdBy = ? OR createdBy = ? OR assignedTo = ? OR assignedTo = ?)
+      ORDER BY createdAt DESC
+    ''', [
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+      startOfDay.millisecondsSinceEpoch, 
+      endOfDay.millisecondsSinceEpoch,
+      userId, partnerId, userId, partnerId,
+    ]);
+    
+    return List.generate(maps.length, (i) {
+      final map = Map<String, dynamic>.from(maps[i]);
+      
+      // 데이터 타입 변환 처리 - 더 안전하게
+      try {
+        if (map['createdAt'] is String) {
+          map['createdAt'] = DateTime.parse(map['createdAt']).millisecondsSinceEpoch;
+        } else if (map['createdAt'] == null) {
+          map['createdAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['dueDate'] is String) {
+          map['dueDate'] = DateTime.parse(map['dueDate']).millisecondsSinceEpoch;
+        } else if (map['dueDate'] == null) {
+          map['dueDate'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        if (map['completedAt'] is String) {
+          map['completedAt'] = DateTime.parse(map['completedAt']).millisecondsSinceEpoch;
+        } else if (map['completedAt'] == null) {
+          map['completedAt'] = DateTime.now().millisecondsSinceEpoch;
+        }
+        
+        // 숫자 필드들 처리
+        if (map['priority'] is String) {
+          map['priority'] = int.tryParse(map['priority']) ?? 1;
+        }
+        if (map['repeatType'] is String) {
+          map['repeatType'] = int.tryParse(map['repeatType']) ?? 0;
+        }
+        if (map['isCompleted'] is String) {
+          map['isCompleted'] = int.tryParse(map['isCompleted']) ?? 0;
+        }
+        if (map['isRepeating'] is String) {
+          map['isRepeating'] = int.tryParse(map['isRepeating']) ?? 0;
+        }
+        
+        // 기존 데이터 마이그레이션: createdBy, assignedTo가 없는 경우 기본값 설정
+        if (map['createdBy'] == null) {
+          map['createdBy'] = userId; // 현재 사용자 ID
+        }
+        if (map['assignedTo'] == null) {
+          map['assignedTo'] = userId; // 현재 사용자 ID
+        }
+        
+        return Todo.fromMap(map);
+      } catch (e) {
+        rethrow;
+      }
+    });
+  }
+
+  // 기존 데이터 정리 메서드 (디버깅용)
+  Future<void> cleanupOldData() async {
+    final db = await database;
+    
+    print('=== 기존 데이터 정리 시작 ===');
+    
+    // 모든 할일 조회
+    final allTodos = await db.query('todos');
+    print('전체 할일 개수: ${allTodos.length}');
+    
+    for (var todo in allTodos) {
+      print('할일: ${todo['title']}, createdBy: ${todo['createdBy']}, assignedTo: ${todo['assignedTo']}');
+    }
+    
+    // createdBy나 assignedTo가 null인 데이터 삭제 (테스트용)
+    final deletedCount = await db.delete(
+      'todos',
+      where: 'createdBy IS NULL OR assignedTo IS NULL',
+    );
+    
+    print('삭제된 할일 개수: $deletedCount');
+    print('=== 기존 데이터 정리 완료 ===');
+  }
+
+  // 데이터베이스 완전 초기화 (디버깅용)
+  Future<void> resetDatabase() async {
+    final db = await database;
+    
+    print('=== 데이터베이스 초기화 시작 ===');
+    
+    // 모든 테이블 삭제
+    await db.execute('DROP TABLE IF EXISTS todos');
+    await db.execute('DROP TABLE IF EXISTS categories');
+    await db.execute('DROP TABLE IF EXISTS history');
+    await db.execute('DROP TABLE IF EXISTS users');
+    await db.execute('DROP TABLE IF EXISTS connections');
+    
+    print('모든 테이블 삭제 완료');
+    
+    // 테이블 다시 생성
+    await _onCreate(db, 3);
+    
+    print('테이블 재생성 완료');
+    print('=== 데이터베이스 초기화 완료 ===');
+  }
+
+  // 모든 할일 조회 (디버깅용)
+  Future<void> debugAllTodos() async {
+    final db = await database;
+    
+    print('=== 모든 할일 조회 (디버깅용) ===');
+    
+    final allTodos = await db.query('todos');
+    print('전체 할일 개수: ${allTodos.length}');
+    
+    for (var todo in allTodos) {
+      print('할일: ${todo['title']}, createdBy: ${todo['createdBy']}, assignedTo: ${todo['assignedTo']}');
+    }
+    
+    // 사용자 정보도 함께 조회
+    final allUsers = await db.query('users');
+    print('전체 사용자 개수: ${allUsers.length}');
+    
+    for (var user in allUsers) {
+      print('사용자: ${user['email']}, id: ${user['id']}');
+    }
+    
+    print('=== 디버깅 완료 ===');
   }
 } 
